@@ -242,6 +242,19 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
+        /* Contenedores para gráficos para evitar desbordes */
+        .chart-container {
+            position: relative;
+        }
+
+        .chart-container.large {
+            height: 300px;
+        }
+
+        .chart-container.small {
+            height: 200px;
+        }
+
         .btn {
             transition: all 0.2s ease;
         }
@@ -1793,25 +1806,33 @@
                         <div class="lg:col-span-2">
                             <div class="card p-6">
                                 <h3 class="text-sm font-medium text-gray-700 mb-4">Evolución de Tareas</h3>
-                                <canvas id="tasks-trend-chart" height="300"></canvas>
+                                <div class="chart-container large">
+                                    <canvas id="tasks-trend-chart"></canvas>
+                                </div>
                             </div>
 
                             <div class="card p-6 mt-6">
                                 <h3 class="text-sm font-medium text-gray-700 mb-4">Distribución por Tipo de
                                     Levantamiento</h3>
-                                <canvas id="inspections-type-chart" height="300"></canvas>
+                                <div class="chart-container large">
+                                    <canvas id="inspections-type-chart"></canvas>
+                                </div>
                             </div>
                         </div>
 
                         <div class="lg:col-span-1">
                             <div class="card p-6">
                                 <h3 class="text-sm font-medium text-gray-700 mb-4">Distribución de Tareas</h3>
-                                <canvas id="tasks-status-chart" height="200"></canvas>
+                                <div class="chart-container small">
+                                    <canvas id="tasks-status-chart"></canvas>
+                                </div>
                             </div>
 
                             <div class="card p-6 mt-6">
                                 <h3 class="text-sm font-medium text-gray-700 mb-4">Productividad por Terminal</h3>
-                                <canvas id="terminal-productivity-chart" height="200"></canvas>
+                                <div class="chart-container small">
+                                    <canvas id="terminal-productivity-chart"></canvas>
+                                </div>
                             </div>
 
                             <div class="card p-6 mt-6">
@@ -2478,15 +2499,19 @@
             leaderSelect.innerHTML = '<option value="">Seleccionar líder</option>';
             assigneesSelect.innerHTML = '';
 
-            // Filtrar supervisores
-            const supervisors = allUsers.filter(user =>
-                ['Supervisor', 'Supervisor Admin', 'Jefe de Terminal'].includes(user.cargo)
-            );
+            // Filtrar y ordenar supervisores
+            const supervisors = allUsers
+                .filter(user =>
+                    ['Supervisor', 'Supervisor Admin', 'Jefe de Terminal'].includes(user.cargo)
+                )
+                .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
 
-            // Filtrar asignables
-            const assignables = allUsers.filter(user =>
-                ['Supervisor', 'Supervisor Admin', 'Inspector'].includes(user.cargo)
-            );
+            // Filtrar y ordenar personal asignable
+            const assignables = allUsers
+                .filter(user =>
+                    ['Supervisor', 'Supervisor Admin', 'Inspector', 'Jefe de Terminal'].includes(user.cargo)
+                )
+                .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo));
 
             // Poblar líderes
             supervisors.forEach(user => {
@@ -2496,13 +2521,20 @@
                 leaderSelect.appendChild(option);
             });
 
-            // Poblar asignables
-            assignables.forEach(user => {
+            // Poblar asignables o mostrar placeholder si no hay personal
+            if (assignables.length === 0) {
                 const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = `${user.nombre_completo} (${user.cargo})`;
+                option.textContent = 'No hay personal disponible';
+                option.disabled = true;
                 assigneesSelect.appendChild(option);
-            });
+            } else {
+                assignables.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.nombre_completo} (${user.cargo})`;
+                    assigneesSelect.appendChild(option);
+                });
+            }
 
             console.log(`✅ Selects actualizados: ${supervisors.length} líderes, ${assignables.length} asignables`);
         }
@@ -3436,11 +3468,9 @@
 
             allUsers = data;
             console.log("✅ Usuarios obtenidos:", allUsers);
-            // Poblar ambos selects de tarea:
-            const assigneesSelect = document.getElementById('task-assignees');
-            const leaderSelect = document.getElementById('task-leader');
-            populateUserSelects(assigneesSelect);
-            populateUserSelects(leaderSelect);
+
+            // Actualizar selectores de tareas con roles correspondientes
+            populateUserSelectsByRole();
 
         }
 
@@ -5435,61 +5465,73 @@ async function handleTaskFormSubmit(e) {
                     {
                         events: async function (info, successCallback, failureCallback) {
                             try {
-                                // Cargar tareas y reuniones
-                                const tasks = await fetchTasks();
-                                const meetings = await fetchMeetings();
-
-                                // Determinar qué mostrar según el botón activo
                                 const showTasks = document.querySelector('#task-calendar-view').classList.contains('bg-primary-600');
                                 const showMeetings = document.querySelector('#meeting-calendar-view').classList.contains('bg-primary-600');
 
+                                // Cargar tareas y reuniones en paralelo
+                                const [tasks, meetings] = await Promise.all([fetchTasks(), fetchMeetings()]);
+
                                 let events = [];
 
-                                // Convertir tareas a eventos
+                                // Convertir tareas a eventos (omitimos completadas)
                                 if (showTasks) {
-                                    const allTasks = [
-                                        ...tasks.assigned,
-                                        ...tasks.created.filter(task => !tasks.assigned.some(t => t.id === task.id))
-                                    ];
+                                    const allTasks = (tasks.all && tasks.all.length)
+                                        ? tasks.all
+                                        : [
+                                            ...tasks.assigned,
+                                            ...tasks.created.filter(task => !tasks.assigned.some(t => t.id === task.id))
+                                        ];
 
-                                    events = events.concat(allTasks.map(task => ({
-                                        id: `task-${task.id}`,
-                                        title: task.title,
-                                        start: task.due_date || task.created_at,
-                                        backgroundColor: getStatusColor(task.status),
-                                        borderColor: getStatusColor(task.status),
-                                        textColor: '#ffffff',
-                                        extendedProps: {
-                                            type: 'task',
-                                            description: task.description,
-                                            status: task.status,
-                                            creator: task.creator ? task.creator.nombre_completo : 'Desconocido'
-                                        }
-                                    })));
+                                    events = events.concat(
+                                        allTasks
+                                            .filter(task => task.status !== 'Completada')
+                                            .map(task => ({
+                                                id: `task-${task.id}`,
+                                                title: task.title,
+                                                start: task.due_date || task.created_at,
+                                                backgroundColor: getStatusColor(task.status),
+                                                borderColor: getStatusColor(task.status),
+                                                textColor: '#ffffff',
+                                                extendedProps: {
+                                                    type: 'task',
+                                                    description: task.description,
+                                                    status: task.status,
+                                                    creator: task.creator ? task.creator.nombre_completo : 'Desconocido'
+                                                }
+                                            }))
+                                    );
                                 }
 
-                                // Convertir reuniones a eventos
+                                // Convertir reuniones a eventos (solo próximas si están disponibles)
                                 if (showMeetings) {
-                                    const allMeetings = [
-                                        ...meetings.upcoming,
-                                        ...meetings.past
-                                    ];
+                                    const meetingList = (meetings.all && meetings.all.length)
+                                        ? meetings.all
+                                        : [...meetings.upcoming, ...meetings.past];
 
-                                    events = events.concat(allMeetings.map(meeting => ({
-                                        id: `meeting-${meeting.id}`,
-                                        title: meeting.title,
-                                        start: `${meeting.date}T${meeting.time}`,
-                                        end: meeting.duration ? new Date(new Date(`${meeting.date}T${meeting.time}`).getTime() + meeting.duration * 60000).toISOString() : undefined,
-                                        backgroundColor: '#f59e0b',
-                                        borderColor: '#f59e0b',
-                                        textColor: '#ffffff',
-                                        extendedProps: {
-                                            type: 'meeting',
-                                            description: meeting.description,
-                                            location: meeting.location,
-                                            creator: meeting.creator ? meeting.creator.nombre_completo : 'Desconocido'
-                                        }
-                                    })));
+                                    events = events.concat(
+                                        meetingList.map(meeting => {
+                                            const start = `${meeting.date}T${meeting.time}`;
+                                            const end = meeting.duration
+                                                ? new Date(new Date(start).getTime() + meeting.duration * 60000).toISOString()
+                                                : undefined;
+
+                                            return {
+                                                id: `meeting-${meeting.id}`,
+                                                title: meeting.title,
+                                                start,
+                                                end,
+                                                backgroundColor: '#f59e0b',
+                                                borderColor: '#f59e0b',
+                                                textColor: '#ffffff',
+                                                extendedProps: {
+                                                    type: 'meeting',
+                                                    description: meeting.description,
+                                                    location: meeting.location,
+                                                    creator: meeting.creator ? meeting.creator.nombre_completo : 'Desconocido'
+                                                }
+                                            };
+                                        })
+                                    );
                                 }
 
                                 successCallback(events);
@@ -7512,6 +7554,9 @@ async function handleTaskFormSubmit(e) {
                 document.getElementById('report-completed-tasks').textContent = completedTasks;
                 document.getElementById('report-in-progress-tasks').textContent = inProgressTasks;
                 document.getElementById('report-inspections').textContent = totalInspections;
+
+                // Esperar al siguiente ciclo de renderizado para asegurar tamaños correctos
+                await new Promise(requestAnimationFrame);
 
                 // Renderizar gráficos
                 renderTasksStatusChart(tasks.all);
