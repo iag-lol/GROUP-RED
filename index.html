@@ -2460,26 +2460,8 @@
         const addEventBtn = document.getElementById('add-event-btn');
 
 
-        // Modificar el evento de clic para abrir el modal
-        document.getElementById('add-task-btn').addEventListener('click', () => {
-            document.getElementById('task-form').reset();
-            document.getElementById('task-id').value = '';
-            document.getElementById('task-modal-title').textContent = 'Nueva Tarea';
-
-            // Usar la nueva función para llenar selectores basados en roles
-            populateUserSelectsByRole();
-
-            // Establecer fecha mínima como hoy para la fecha de entrega
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('task-due-date').min = today;
-
-            openModal(taskModal);
-        });
-
-
-
         // Función para cargar usuarios en los selectores según sus roles
-        function populateUserSelectsByRole() {
+        async function populateUserSelectsByRole() {
             console.log('🔁 Ejecutando populateUserSelectsByRole');
 
             const leaderSelect = document.getElementById('task-leader');
@@ -2491,7 +2473,16 @@
             }
 
             if (!Array.isArray(allUsers) || allUsers.length === 0) {
-                console.warn('⚠️ allUsers vacío o no inicializado.');
+                console.warn('⚠️ allUsers vacío, intentando recargar...');
+                await fetchAllUsers();
+            }
+
+            if (!Array.isArray(allUsers) || allUsers.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'No hay personal disponible';
+                option.disabled = true;
+                leaderSelect.appendChild(option.cloneNode(true));
+                assigneesSelect.appendChild(option);
                 return;
             }
 
@@ -2571,7 +2562,7 @@
                 document.getElementById('task-due-date').value = task.due_date || '';
 
                 // Cargar usuarios en selectores
-                populateUserSelectsByRole();
+                await populateUserSelectsByRole();
 
                 // Seleccionar líder
                 if (task.leader_id) {
@@ -3151,21 +3142,23 @@
 
             // Abrir modales
             if (addTaskBtn) {
-                addTaskBtn.addEventListener('click', () => {
+                addTaskBtn.addEventListener('click', async () => {
                     document.getElementById('task-form').reset();
                     document.getElementById('task-id').value = '';
                     document.getElementById('task-modal-title').textContent = 'Nueva Tarea';
-                    populateUserSelects(document.getElementById('task-assignees'));
+                    await populateUserSelectsByRole();
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('task-due-date').min = today;
                     openModal(taskModal);
                 });
             }
 
             if (addMeetingBtn) {
-                addMeetingBtn.addEventListener('click', () => {
+                addMeetingBtn.addEventListener('click', async () => {
                     document.getElementById('meeting-form').reset();
                     document.getElementById('meeting-id').value = '';
                     document.getElementById('meeting-modal-title').textContent = 'Nueva Reunión';
-                    populateUserSelects(document.getElementById('meeting-attendees'));
+                    await populateUserSelects(document.getElementById('meeting-attendees'));
                     openModal(meetingModal);
                 });
             }
@@ -3198,13 +3191,13 @@
                         document.getElementById('task-form').reset();
                         document.getElementById('task-id').value = '';
                         document.getElementById('task-modal-title').textContent = 'Nueva Tarea';
-                        populateUserSelects(document.getElementById('task-assignees'));
+                        await populateUserSelectsByRole();
                         openModal(taskModal);
                     } else {
                         document.getElementById('meeting-form').reset();
                         document.getElementById('meeting-id').value = '';
                         document.getElementById('meeting-modal-title').textContent = 'Nueva Reunión';
-                        populateUserSelects(document.getElementById('meeting-attendees'));
+                        await populateUserSelects(document.getElementById('meeting-attendees'));
                         openModal(meetingModal);
                     }
                 });
@@ -3469,25 +3462,6 @@
             allUsers = data;
             console.log("✅ Usuarios obtenidos:", allUsers);
 
-            // Actualizar selectores de tareas con roles correspondientes
-            populateUserSelectsByRole();
-
-        }
-
-
-        function showTaskModal() {
-            console.log("🧪 Abriendo modal de tarea");
-
-            // Llenar selects SIEMPRE al abrir el modal
-            populateUserSelectsByRole();
-
-            // Mostrar modal
-            const taskModal = document.getElementById('taskModal');
-            if (taskModal) {
-                taskModal.classList.remove('hidden');
-            } else {
-                console.error('❌ No se encontró el modal con id taskModal');
-            }
         }
 
 
@@ -3862,15 +3836,29 @@
         }
 
         // Llenar selects de usuarios
-        function populateUserSelects(selectElement) {
+        async function populateUserSelects(selectElement) {
             selectElement.innerHTML = '';
 
-            allUsers.forEach(user => {
+            if (!Array.isArray(allUsers) || allUsers.length === 0) {
+                await fetchAllUsers();
+            }
+
+            if (!Array.isArray(allUsers) || allUsers.length === 0) {
                 const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = `${user.nombre_completo} (${user.cargo})`;
+                option.textContent = 'No hay personal disponible';
+                option.disabled = true;
                 selectElement.appendChild(option);
-            });
+                return;
+            }
+
+            allUsers
+                .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
+                .forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.nombre_completo} (${user.cargo})`;
+                    selectElement.appendChild(option);
+                });
         }
 
         // ===================================================================================
@@ -5214,15 +5202,11 @@
 
                         // Seleccionar líder
                         const leaderSelect = document.getElementById('task-leader');
-                        populateUserSelects(leaderSelect);
+                        const assigneesSelect = document.getElementById('task-assignees');
+                        await populateUserSelectsByRole();
                         if (task.leader) {
                             leaderSelect.value = task.leader.id;
                         }
-                        populateUserSelectsByRole();
-
-                        // Seleccionar asignados
-                        const assigneesSelect = document.getElementById('task-assignees');
-                        populateUserSelects(assigneesSelect);
 
                         if (task.assignees) {
                             const assigneeIds = task.assignees.map(a => a.user.id);
@@ -5253,6 +5237,11 @@
        // ⏺ Manejar envío del formulario de tarea
 async function handleTaskFormSubmit(e) {
     e.preventDefault();
+
+    if (!isAdmin()) {
+        showToast('Solo el Jefe de Terminal o Supervisor Admin pueden gestionar tareas.', 'error');
+        return;
+    }
 
     // 1. Captura de campos
     const form        = e.target;
@@ -5951,7 +5940,7 @@ async function handleTaskFormSubmit(e) {
 
                 // Seleccionar participantes
                 const attendeesSelect = document.getElementById('meeting-attendees');
-                populateUserSelects(attendeesSelect);
+                await populateUserSelects(attendeesSelect);
 
                 if (meeting.attendees) {
                     const attendeeIds = meeting.attendees.map(a => a.user_id);
@@ -5969,10 +5958,15 @@ async function handleTaskFormSubmit(e) {
         }
 
         // Manejar envío del formulario de reunión
-        async function handleMeetingFormSubmit(e) {
-            e.preventDefault();
+async function handleMeetingFormSubmit(e) {
+    e.preventDefault();
 
-            const meetingId = document.getElementById('meeting-id').value;
+    if (!isAdmin()) {
+        showToast('Solo el Jefe de Terminal o Supervisor Admin pueden gestionar reuniones.', 'error');
+        return;
+    }
+
+    const meetingId = document.getElementById('meeting-id').value;
             const title = document.getElementById('meeting-title').value.trim();
             const description = document.getElementById('meeting-description').value.trim();
             const date = document.getElementById('meeting-date').value;
@@ -6940,6 +6934,7 @@ async function handleTaskFormSubmit(e) {
             try {
                 // Refrescar lista de usuarios
                 await fetchAllUsers();
+                await populateUserSelectsByRole();
 
                 // Renderizar tabla de usuarios
                 renderTeamTable(allUsers);
