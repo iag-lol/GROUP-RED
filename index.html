@@ -680,11 +680,22 @@
         .app-content {
             display: flex;
             flex: 1;
+
             flex-direction: row-reverse; /* Sidebar on the right */
+
         }
 
         /* Sidebar */
         .sidebar {
+
+    position: fixed;
+    top: var(--header-height);
+    right: 0;
+    left: auto;
+    height: calc(100vh - var(--header-height));
+    width: var(--sidebar-width);
+    background-color: var(--panel-bg);
+    border-left: 1px solid var(--border);
     width: var(--sidebar-width);
     background-color: var(--panel-bg);
     border-left: 1px solid var(--border); /* Right border */
@@ -769,7 +780,14 @@
 .main {
     flex: 1;
     padding: 20px;
-    margin-right: var(--sidebar-width); /* Espacio para el sidebar derecho */
+    margin-right: var(--sidebar-width);
+    margin-left: 0;
+}
+
+@media (max-width: 1024px) {
+    .main {
+        margin-right: 0;
+    }
 }
 
 @media (max-width: 768px) {
@@ -782,17 +800,28 @@
         transform: translateX(0); /* Slide in from the right */
     }
 
-
-
     .mobile-nav {
         display: block;
     }
+}
 
+        .chart-box {
+            position: relative;
+            width: 100%;
+            height: 320px;
+        }
+
+
+        .chart-box > canvas {
+            position: absolute;
+            inset: 0;
+        }
 
     .main {
         margin-right: 0; /* Remove reserved space when sidebar is hidden */
     }
 }
+
         
         .page-header {
             display: flex;
@@ -1771,48 +1800,6 @@
             background: rgba(59, 130, 246, 0.6);
         }
         
-        /* Responsive Styles */
-        @media (max-width: 1200px) {
-            .sidebar {
-                width: var(--sidebar-collapsed-width);
-            }
-            
-            .sidebar-nav-text {
-                display: none;
-            }
-            
-            .sidebar-nav-item {
-                justify-content: center;
-                padding: 10px;
-            }
-            
-            .sidebar-heading {
-                text-align: center;
-                padding: 0;
-            }
-            
-            .sidebar.expanded {
-                position: fixed;
-                width: var(--sidebar-width);
-                box-shadow: var(--shadow-lg);
-                z-index: var(--z-fixed);
-            }
-            
-            .sidebar.expanded .sidebar-nav-text {
-                display: block;
-            }
-            
-            .sidebar.expanded .sidebar-nav-item {
-                justify-content: flex-start;
-                padding: 10px 12px;
-            }
-            
-            .sidebar.expanded .sidebar-heading {
-                text-align: left;
-                padding: 0 10px;
-            }
-        }
-        
         @media (max-width: 992px) {
             .cards-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -2302,14 +2289,14 @@
                             <div class="card-header">
                                 <h2 class="card-title">Distribución de Tareas</h2>
                             </div>
-                            <canvas id="chart1" height="250"></canvas>
+                            <div class="chart-box"><canvas id="chart1"></canvas></div>
                         </div>
                         
                         <div class="card">
                             <div class="card-header">
                                 <h2 class="card-title">Evolución Semanal</h2>
                             </div>
-                            <canvas id="chart2" height="250"></canvas>
+                            <div class="chart-box"><canvas id="chart2"></canvas></div>
                         </div>
                     </div>
                     
@@ -2796,11 +2783,26 @@
         }
         
         function canManage() {
-            return ["supervisor_admin", "jefe_terminal", "supervisor"].includes(me.role);
+            return ["supervisor_admin", "jefe_terminal"].includes(me.role);
         }
-        
+
         function canCreateUsers() {
             return me.role === "supervisor_admin";
+        }
+
+        function applyRoleUI() {
+            const can = canManage();
+
+            ["#btn-new-task", "#btn-new-meeting", "#btn-new-task-2", "#btn-new-meeting-2", "#btn-new-lev", ".page-actions"]
+                .forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = can ? "" : "none"; });
+
+            document.querySelectorAll(".btn-edit, [data-action='edit'], [data-action='pospone']")
+                .forEach(b => { if (!can) b.remove(); });
+
+            ["#btn-save-em", "#btn-pospone-em", "#btn-create-task", "#btn-create-meeting", "#btn-create-lev"]
+                .forEach(sel => { const el = document.querySelector(sel); if (el) el.disabled = !can; });
+
+            if (!can) { const bx = document.querySelector("#box-avisos"); if (bx) bx.remove(); }
         }
         
 // JavaScript para la navegación del sidebar
@@ -2952,6 +2954,7 @@ window.toggleSidebar = toggleSidebar;
             loadUsers().then(() => {
                 populateSelectors();
                 refreshAll();
+                applyRoleUI();
                 overdueScan();
                 
                 // Welcome toast
@@ -4124,6 +4127,7 @@ async function renderMeetings() {
 }
 
 async function openEditMeeting(id) {
+    if (!canManage()) { toast("Sin permiso", "warn"); return; }
     editMeetingId = id;
     
     try {
@@ -4167,6 +4171,7 @@ async function openEditMeeting(id) {
 }
 
 async function saveEditMeeting() {
+    if (!canManage()) { toast("Sin permiso", "warn"); return; }
     if (!editMeetingId) return;
     
     const title = qs("#em-title").value.trim();
@@ -4205,6 +4210,7 @@ async function saveEditMeeting() {
 }
 
 async function posponeEditMeeting() {
+    if (!canManage()) { toast("Sin permiso", "warn"); return; }
     if (!editMeetingId) return;
     
     try {
