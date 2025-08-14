@@ -680,10 +680,14 @@
         .app-content {
             display: flex;
             flex: 1;
+
+            flex-direction: row-reverse; /* Sidebar on the right */
+
         }
 
         /* Sidebar */
         .sidebar {
+
     position: fixed;
     top: var(--header-height);
     right: 0;
@@ -692,6 +696,13 @@
     width: var(--sidebar-width);
     background-color: var(--panel-bg);
     border-left: 1px solid var(--border);
+    width: var(--sidebar-width);
+    background-color: var(--panel-bg);
+    border-left: 1px solid var(--border); /* Right border */
+    height: calc(100vh - var(--header-height));
+    position: fixed;
+    top: var(--header-height);
+    right: 0; /* Stick to the right */
     z-index: 90;
     transition: width 0.3s ease, transform 0.3s ease;
     display: flex;
@@ -781,12 +792,12 @@
 
 @media (max-width: 768px) {
     .sidebar {
-        transform: translateX(100%);
+        transform: translateX(100%); /* Hide sidebar off-canvas to the right */
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     }
 
     .sidebar.expanded {
-        transform: translateX(0);
+        transform: translateX(0); /* Slide in from the right */
     }
 
     .mobile-nav {
@@ -800,10 +811,17 @@
             height: 320px;
         }
 
+
         .chart-box > canvas {
             position: absolute;
             inset: 0;
         }
+
+    .main {
+        margin-right: 0; /* Remove reserved space when sidebar is hidden */
+    }
+}
+
         
         .page-header {
             display: flex;
