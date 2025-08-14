@@ -680,6 +680,7 @@
         .app-content {
             display: flex;
             flex: 1;
+            flex-direction: row-reverse;
         }
         
         /* Sidebar */
@@ -780,11 +781,23 @@
     .sidebar.expanded {
         transform: translateX(0);
     }
+
     .main {
         margin-right: 0;
     }
-}
-        
+
+
+
+
+    .mobile-nav {
+        display: block;
+    }
+
+
+    .main {
+        margin-right: 0;
+    }
+ 
         .page-header {
             display: flex;
             justify-content: space-between;
