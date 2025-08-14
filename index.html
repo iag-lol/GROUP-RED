@@ -684,115 +684,135 @@
 
         /* Sidebar */
         .sidebar {
-    position: fixed;
-    top: var(--header-height);
-    right: 0;
-    left: auto;
-    height: calc(100vh - var(--header-height));
-    width: var(--sidebar-width);
-    background-color: var(--panel-bg);
-    border-left: 1px solid var(--border);
-    z-index: 90;
-    transition: width 0.3s ease, transform 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            height: calc(100vh - var(--header-height));
+            width: var(--sidebar-width);
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            z-index: 90;
+            transition: width 0.3s ease, transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
 
-/* Secciones del Sidebar */
-.sidebar-section {
-    padding: 16px 12px;
-}
+        /* Secciones del Sidebar */
+        .sidebar-section {
+            padding: 16px 12px;
+        }
 
-.sidebar-heading {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-light);
-    padding: 0 12px 8px;
-    margin-bottom: 8px;
-}
+        .sidebar-heading {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            padding: 0 12px 8px;
+            margin-bottom: 8px;
+        }
 
-/* Items de navegación */
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
+        /* Items de navegación */
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
 
-.sidebar-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    color: var(--text);
-    position: relative;
-}
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: var(--text);
+            position: relative;
+        }
 
-.sidebar-nav-item:hover {
-    background-color: var(--panel-bg-alt);
-}
+        .sidebar-nav-item:hover {
+            background-color: var(--panel-bg-alt);
+        }
 
-.sidebar-nav-item.active {
-    background-color: var(--primary-transparent);
-    color: var(--primary);
-}
+        .sidebar-nav-item.active {
+            background-color: var(--primary-transparent);
+            color: var(--primary);
+        }
 
-.sidebar-nav-item.active::before {
-    content: "";
-    position: absolute;
-    right: 0; /* Align indicator to inner right edge */
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 20px;
-    background-color: var(--primary);
-    border-radius: 2px 0 0 2px;
-}
+        .sidebar-nav-item.active::before {
+            content: "";
+            position: absolute;
+            left: 0; /* Align indicator to inner left edge */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background-color: var(--primary);
+            border-radius: 0 2px 2px 0;
+        }
 
-.sidebar-nav-item i {
-    font-size: 18px;
-    width: 24px;
-    text-align: center;
-}
+        .sidebar-nav-item i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
 
-.sidebar-nav-text {
-    font-size: 14px;
-    font-weight: 500;
-}
+        .sidebar-nav-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Estilo específico para el botón logout */
+        #btn-logout {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        
+        #btn-logout:hover {
+            background-color: var(--danger-transparent);
+            color: var(--danger);
+        }
+        
+        .dark-mode #btn-logout:hover {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--danger-light);
+        }
+        
+        #btn-logout:active {
+            transform: scale(0.98);
+        }
 
-/* Main Content */
-.main {
-    flex: 1;
-    padding: 20px;
-    margin-right: var(--sidebar-width);
-    margin-left: 0;
-}
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 20px;
+            margin-left: var(--sidebar-width);
+            margin-right: 0;
+        }
 
-@media (max-width: 1024px) {
-    .main {
-        margin-right: 0;
-    }
-}
+        @media (max-width: 1024px) {
+            .main {
+                margin-left: 0;
+            }
+        }
 
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(100%);
-        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            }
 
-    .sidebar.expanded {
-        transform: translateX(0);
-    }
+            .sidebar.expanded {
+                transform: translateX(0);
+            }
 
-    .mobile-nav {
-        display: block;
-    }
-}
+            .mobile-nav {
+                display: block;
+            }
+        }
 
         .chart-box {
             position: relative;
@@ -939,7 +959,7 @@
             margin-inline: auto;
         }
 
-        /* Limita la altura de los charts para que no “crezcan” verticalmente */
+        /* Limita la altura de los charts para que no "crezcan" verticalmente */
         .card canvas {
             max-height: 320px;
         }
@@ -2009,7 +2029,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-heading">Cuenta</div>
                     <div class="sidebar-nav">
-                        <div class="sidebar-nav-item" id="btn-logout">
+                        <div class="sidebar-nav-item" id="btn-logout" onclick="leave()">
                             <i class="fas fa-sign-out-alt"></i>
                             <span class="sidebar-nav-text">Cerrar Sesión</span>
                         </div>
@@ -2785,8 +2805,14 @@
         function applyRoleUI() {
             const manage = canManage();
             const canUsers = canCreateUsers();
-            const hide = sel => { const el = document.querySelector(sel); if (el) el.classList.add('hidden'); };
-            const show = sel => { const el = document.querySelector(sel); if (el) el.classList.remove('hidden'); };
+            const hide = sel => { 
+                const el = document.querySelector(sel); 
+                if (el) el.classList.add('hidden'); 
+            };
+            const show = sel => { 
+                const el = document.querySelector(sel); 
+                if (el) el.classList.remove('hidden'); 
+            };
 
             // Botones de creación (dashboard/listas/modales)
             ['#btn-new-task', '#btn-new-task-2', '#btn-new-meeting', '#btn-new-meeting-2', '#btn-new-lev']
@@ -2799,7 +2825,7 @@
             // Módulo de usuarios
             if (!canUsers) hide('#btn-usuarios'); else show('#btn-usuarios');
 
-            // Si ya hay listas renderizadas, oculta botones de editar que hayan quedado
+            // Ocultar botones de editar en listas existentes
             if (!manage) {
                 document.querySelectorAll('.btn-edit-task,.btn-edit-meeting,[onclick^="openEditMeeting("]')
                   .forEach(el => el.classList.add('hidden'));
@@ -2965,14 +2991,195 @@ window.toggleSidebar = toggleSidebar;
         }
         
         function leave() {
+            console.log("Función leave ejecutada");
             if (confirm("¿Está seguro que desea cerrar sesión?")) {
+                // Limpiar localStorage
                 localStorage.removeItem("sessionUser");
+                
+                // Cambiar clases del body para mostrar pantalla de login
                 document.body.classList.remove("auth-yes");
                 document.body.classList.add("auth-no");
                 
-                // Clear fields
-                qs("#lg-user").value = "";
-                qs("#lg-pass").value = "";
+                // Limpiar campos del formulario de login
+                const userInput = qs("#lg-user");
+                const passInput = qs("#lg-pass");
+                if (userInput) userInput.value = "";
+                if (passInput) passInput.value = "";
+                
+                // Limpiar variables globales
+                me = null;
+                users = [];
+                supervisors = [];
+                inspectors = [];
+                charts = {};
+                currentTask = null;
+                calendar = null;
+                renderNonce = {};
+                
+                // Limpiar audio context
+                if (audioCtx) {
+                    audioCtx.close();
+                    audioCtx = null;
+                }
+                
+                // Limpiar notificaciones
+                const toasts = qs("#toasts");
+                if (toasts) {
+                    toasts.innerHTML = "";
+                }
+                
+                // Limpiar contenido de las vistas
+                const views = qsa('.view');
+                views.forEach(view => {
+                    if (view.id === 'view-dashboard') {
+                        view.innerHTML = `
+                            <div class="page-header">
+                                <h1 class="page-title">Dashboard</h1>
+                                <div class="page-actions">
+                                    <button id="btn-new-task" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i>
+                                        <span>Nueva Tarea</span>
+                                    </button>
+                                    <button id="btn-new-meeting" class="btn btn-secondary">
+                                        <i class="fas fa-users"></i>
+                                        <span>Nueva Reunión</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Stats Cards -->
+                            <div class="cards-grid">
+                                <div class="card stat-card">
+                                    <div class="stat-card-icon">
+                                        <i class="fas fa-clipboard-list"></i>
+                                    </div>
+                                    <div class="stat-card-content">
+                                        <div class="stat-card-title">Pendientes</div>
+                                        <div class="stat-card-value" id="kpi-p">0</div>
+                                        <div class="stat-card-badge badge-pending">
+                                            <i class="fas fa-clock"></i>
+                                            <span>Tareas por iniciar</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card stat-card">
+                                    <div class="stat-card-icon">
+                                        <i class="fas fa-spinner"></i>
+                                    </div>
+                                    <div class="stat-card-content">
+                                        <div class="stat-card-title">En Curso</div>
+                                        <div class="stat-card-value" id="kpi-e">0</div>
+                                        <div class="stat-card-badge badge-progress">
+                                            <i class="fas fa-spinner"></i>
+                                            <span>Tareas activas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card stat-card">
+                                    <div class="stat-card-icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="stat-card-content">
+                                        <div class="stat-card-title">Terminadas</div>
+                                        <div class="stat-card-value" id="kpi-t">0</div>
+                                        <div class="stat-card-badge badge-completed">
+                                            <i class="fas fa-check-circle"></i>
+                                            <span>Tareas completadas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card stat-card">
+                                    <div class="stat-card-icon">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </div>
+                                    <div class="stat-card-content">
+                                        <div class="stat-card-title">Atrasadas</div>
+                                        <div class="stat-card-value" id="kpi-o">0</div>
+                                        <div class="stat-card-badge badge-overdue">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <span>Requieren atención</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card stat-card">
+                                    <div class="stat-card-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <div class="stat-card-content">
+                                        <div class="stat-card-title">Próximas Reuniones</div>
+                                        <div class="stat-card-value" id="kpi-r">0</div>
+                                        <div class="stat-card-badge">
+                                            <i class="fas fa-calendar-check"></i>
+                                            <span>Agendadas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Task & Meeting Cards -->
+                            <div class="grid-2">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h2 class="card-title">Últimas Tareas</h2>
+                                        <div class="card-actions">
+                                            <select id="flt-status" class="form-control">
+                                                <option value="">Todas</option>
+                                                <option value="pendiente">Pendiente</option>
+                                                <option value="en_curso">En curso</option>
+                                                <option value="terminada">Terminada</option>
+                                            </select>
+                                            <select id="flt-mias" class="form-control">
+                                                <option value="todas">Visibles</option>
+                                                <option value="mias">Asignadas a mí</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="task-list" id="list-dashboard">
+                                        <!-- Tasks will be loaded here -->
+                                        <div class="task-item task-item-status-pending">
+                                            <div class="task-item-content">
+                                                <div class="task-item-title">Cargando tareas...</div>
+                                                <div class="task-item-meta">
+                                                    <span class="task-item-badge">
+                                                        <i class="fas fa-spinner fa-spin"></i>
+                                                        <span>Espere por favor</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h2 class="card-title">Próximas Reuniones</h2>
+                                    </div>
+                                    <div class="meeting-list" id="list-next-meet">
+                                        <!-- Meetings will be loaded here -->
+                                        <div class="meeting-item">
+                                            <div class="meeting-item-content">
+                                                <div class="meeting-item-title">Cargando reuniones...</div>
+                                                <div class="meeting-item-meta">
+                                                    <span class="task-item-badge">
+                                                        <i class="fas fa-spinner fa-spin"></i>
+                                                        <span>Espere por favor</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                // Mostrar mensaje de confirmación
+                toast("Sesión cerrada exitosamente", "ok");
             }
         }
         
@@ -3357,139 +3564,142 @@ function visibleToMe(task) {
            canManage();
 }
 
-// Task Rendering Functions
-async function renderTaskList(containerId) {
-    const nonce = (renderNonce[containerId] || 0) + 1;
-    renderNonce[containerId] = nonce;
-    
-    const container = qs(containerId);
-    const filterStatus = containerId === "#list-dashboard" ? qs("#flt-status").value : qs("#flt-tasks").value;
-    const scope = containerId === "#list-tasks" ? qs("#flt-vis").value : "todas";
-    
-    // Show loading state
-    container.innerHTML = `
-        <div class="task-item">
-            <div class="task-item-content">
-                <div class="task-item-title">Cargando tareas...</div>
-                <div class="task-item-meta">
-                    <span class="task-item-badge">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Espere por favor</span>
-                    </span>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    try {
-        const tasks = await fetchTasks(filterStatus);
-        
-        // Check if this render is still valid (no newer render was started)
-        if (renderNonce[containerId] !== nonce) return;
-        
-        // Filter tasks
-        const filteredTasks = tasks.filter(t => 
-            visibleToMe(t) && 
-            (scope === "mias" ? (t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id) : true)
-        );
-        
-        container.innerHTML = "";
-        
-        if (filteredTasks.length === 0) {
+        // Task Rendering Functions
+        async function renderTaskList(containerId) {
+            const nonce = (renderNonce[containerId] || 0) + 1;
+            renderNonce[containerId] = nonce;
+            
+            const container = qs(containerId);
+            const filterStatus = containerId === "#list-dashboard" ? qs("#flt-status").value : qs("#flt-tasks").value;
+            const scope = containerId === "#list-tasks" ? qs("#flt-vis").value : "todas";
+            
+            // Show loading state
             container.innerHTML = `
                 <div class="task-item">
                     <div class="task-item-content">
-                        <div class="task-item-title">No hay tareas disponibles</div>
+                        <div class="task-item-title">Cargando tareas...</div>
                         <div class="task-item-meta">
                             <span class="task-item-badge">
-                                <i class="fas fa-info-circle"></i>
-                                <span>Puede crear una nueva tarea con el botón "Nueva tarea"</span>
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Espere por favor</span>
                             </span>
                         </div>
                     </div>
                 </div>
             `;
-            return;
+            
+            try {
+                const tasks = await fetchTasks(filterStatus);
+                
+                // Check if this render is still valid (no newer render was started)
+                if (renderNonce[containerId] !== nonce) return;
+                
+                // Filter tasks
+                const filteredTasks = tasks.filter(t => 
+                    visibleToMe(t) && 
+                    (scope === "mias" ? (t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id) : true)
+                );
+                
+                container.innerHTML = "";
+                
+                if (filteredTasks.length === 0) {
+                    container.innerHTML = `
+                        <div class="task-item">
+                            <div class="task-item-content">
+                                <div class="task-item-title">No hay tareas disponibles</div>
+                                <div class="task-item-meta">
+                                    <span class="task-item-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>${canManage() ? 'Puede crear una nueva tarea con el botón "Nueva tarea"' : 'No hay tareas asignadas'}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                filteredTasks.forEach(task => {
+                    const assignees = task.assignees.map(id => nameOf(id)).join(", ");
+                    const leader = task.leader_id ? nameOf(task.leader_id) : "—";
+                    const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "terminada";
+                    
+                    let statusClass = "";
+                    if (task.status === "pendiente") statusClass = "task-item-status-pending";
+                    else if (task.status === "en_curso") statusClass = "task-item-status-progress";
+                    else if (task.status === "terminada") statusClass = "task-item-status-completed";
+                    
+                    if (isOverdue) statusClass = "task-item-status-overdue";
+                    
+                    const row = document.createElement("div");
+                    row.className = `task-item ${statusClass}`;
+                    row.innerHTML = `
+                        <div class="task-item-content">
+                            <div class="task-item-title">${task.title}</div>
+                            <div class="task-item-meta">
+                                <span class="task-item-badge">
+                                    <i class="fas fa-${task.type === 'tarea' ? 'tasks' : 'clipboard-list'}"></i>
+                                    <span>${task.type}</span>
+                                </span>
+                                <span class="task-item-badge">
+                                    <i class="fas fa-user"></i>
+                                    <span>Líder: ${leader}</span>
+                                </span>
+                                ${assignees ? `
+                                    <span class="task-item-badge">
+                                        <i class="fas fa-users"></i>
+                                        <span>Asignados: ${assignees}</span>
+                                    </span>
+                                ` : ''}
+                                ${task.due_date ? `
+                                    <span class="task-item-badge ${isOverdue ? 'badge-overdue' : ''}">
+                                        <i class="fas fa-${isOverdue ? 'exclamation-triangle' : 'calendar-alt'}"></i>
+                                        <span>${formatDate(task.due_date)}</span>
+                                    </span>
+                                ` : ''}
+                                <span class="task-item-badge badge-${
+                                    task.status === 'pendiente' ? 'pending' : 
+                                    task.status === 'en_curso' ? 'progress' : 'completed'
+                                }">
+                                    <i class="fas fa-${
+                                        task.status === 'pendiente' ? 'clock' : 
+                                        task.status === 'en_curso' ? 'spinner' : 'check-circle'
+                                    }"></i>
+                                    <span>${task.status.replace('_', ' ')}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="task-item-actions">
+                            <button class="btn btn-sm btn-primary" onclick="openTask('${task.id}')">
+                                <i class="fas fa-external-link-alt"></i>
+                                <span>Abrir</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    container.appendChild(row);
+                });
+                
+                // Aplicar permisos después de renderizar
+                applyRoleUI();
+                
+            } catch (err) {
+                console.error("Error rendering task list:", err);
+                container.innerHTML = `
+                    <div class="task-item task-item-status-overdue">
+                        <div class="task-item-content">
+                            <div class="task-item-title">Error al cargar tareas</div>
+                            <div class="task-item-meta">
+                                <span class="task-item-badge badge-overdue">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Ocurrió un error al cargar las tareas</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
         }
-        
-        filteredTasks.forEach(task => {
-            const assignees = task.assignees.map(id => nameOf(id)).join(", ");
-            const leader = task.leader_id ? nameOf(task.leader_id) : "—";
-            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "terminada";
-            
-            let statusClass = "";
-            if (task.status === "pendiente") statusClass = "task-item-status-pending";
-            else if (task.status === "en_curso") statusClass = "task-item-status-progress";
-            else if (task.status === "terminada") statusClass = "task-item-status-completed";
-            
-            if (isOverdue) statusClass = "task-item-status-overdue";
-            
-            const row = document.createElement("div");
-            row.className = `task-item ${statusClass}`;
-            row.innerHTML = `
-                <div class="task-item-content">
-                    <div class="task-item-title">${task.title}</div>
-                    <div class="task-item-meta">
-                        <span class="task-item-badge">
-                            <i class="fas fa-${task.type === 'tarea' ? 'tasks' : 'clipboard-list'}"></i>
-                            <span>${task.type}</span>
-                        </span>
-                        <span class="task-item-badge">
-                            <i class="fas fa-user"></i>
-                            <span>Líder: ${leader}</span>
-                        </span>
-                        ${assignees ? `
-                            <span class="task-item-badge">
-                                <i class="fas fa-users"></i>
-                                <span>Asignados: ${assignees}</span>
-                            </span>
-                        ` : ''}
-                        ${task.due_date ? `
-                            <span class="task-item-badge ${isOverdue ? 'badge-overdue' : ''}">
-                                <i class="fas fa-${isOverdue ? 'exclamation-triangle' : 'calendar-alt'}"></i>
-                                <span>${formatDate(task.due_date)}</span>
-                            </span>
-                        ` : ''}
-                        <span class="task-item-badge badge-${
-                            task.status === 'pendiente' ? 'pending' : 
-                            task.status === 'en_curso' ? 'progress' : 'completed'
-                        }">
-                            <i class="fas fa-${
-                                task.status === 'pendiente' ? 'clock' : 
-                                task.status === 'en_curso' ? 'spinner' : 'check-circle'
-                            }"></i>
-                            <span>${task.status.replace('_', ' ')}</span>
-                        </span>
-                    </div>
-                </div>
-                <div class="task-item-actions">
-                    <button class="btn btn-sm btn-primary" onclick="openTask('${task.id}')">
-                        <i class="fas fa-external-link-alt"></i>
-                        <span>Abrir</span>
-                    </button>
-                </div>
-            `;
-            
-            container.appendChild(row);
-        });
-        
-    } catch (err) {
-        console.error("Error rendering task list:", err);
-        container.innerHTML = `
-            <div class="task-item task-item-status-overdue">
-                <div class="task-item-content">
-                    <div class="task-item-title">Error al cargar tareas</div>
-                    <div class="task-item-meta">
-                        <span class="task-item-badge badge-overdue">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span>Ocurrió un error al cargar las tareas</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-}
 
 async function renderLevantamientos() {
     try {
@@ -3509,7 +3719,7 @@ async function renderLevantamientos() {
                         <div class="task-item-meta">
                             <span class="task-item-badge">
                                 <i class="fas fa-info-circle"></i>
-                                <span>Puede crear un nuevo levantamiento con el botón "Crear Levantamiento"</span>
+                                <span>${canManage() ? 'Puede crear un nuevo levantamiento con el botón "Crear Levantamiento"' : 'No hay levantamientos asignados'}</span>
                             </span>
                         </div>
                     </div>
@@ -3577,7 +3787,7 @@ async function renderLevantamientos() {
                 <div class="card">
                     <div style="text-align: center; padding: 20px;">
                         <i class="fas fa-info-circle" style="font-size: 24px; margin-bottom: 10px; color: var(--text-light);"></i>
-                        <p>No hay enlaces de acceso rápido disponibles</p>
+                        <p>${canManage() ? 'No hay enlaces de acceso rápido disponibles' : 'No hay levantamientos con enlaces asignados'}</p>
                     </div>
                 </div>
             `;
@@ -3631,6 +3841,9 @@ async function renderLevantamientos() {
                 linksContainer.appendChild(c);
             });
         }
+        
+        // Aplicar permisos después de renderizar
+        applyRoleUI();
         
     } catch (err) {
         console.error("Error rendering levantamientos:", err);
@@ -4122,13 +4335,14 @@ async function renderMeetings() {
             dashboardMeetingsContainer.appendChild(dashboardItem);
         });
 
-        // Si hay otra plantilla similar (por ejemplo en el dashboard), aplicar la misma condición
+                        // Aplicar permisos después de renderizar
+                applyRoleUI();
 
-    } catch (err) {
-        console.error("Error rendering meetings:", err);
-        toast("Error al cargar reuniones", "bad");
-    }
-}
+            } catch (err) {
+                console.error("Error rendering meetings:", err);
+                toast("Error al cargar reuniones", "bad");
+            }
+        }
 
 async function openEditMeeting(id) {
     if (!canManage()) { toast("Sin permiso", "warn"); return; }
@@ -5183,7 +5397,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Logout button
-    qs('#btn-logout').addEventListener('click', leave);
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#btn-logout')) {
+            console.log("Botón logout clickeado");
+            leave();
+        }
+    });
     
     // Dropdown hide/show mentions
     document.addEventListener('click', e => {
