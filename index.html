@@ -435,10 +435,15 @@
         }
         
         /* Utilities for showing/hiding content */
-        .auth-no .app-content {
+        #app {
             display: none;
         }
-        
+
+        .auth-yes #app {
+            display: flex;
+            flex-direction: column;
+        }
+
         .auth-yes .auth-screen {
             display: none;
         }
@@ -454,6 +459,8 @@
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
+            left: 0;
+            width: 100%;
             z-index: var(--z-sticky);
             display: flex;
             align-items: center;
@@ -757,35 +764,30 @@
     font-weight: 500;
 }
 
-/* Área principal de contenido */
+/* Main Content */
 .main {
     flex: 1;
     padding: 20px;
     margin-right: var(--sidebar-width); /* Espacio para el sidebar derecho */
 }
 
-/* Media queries para dispositivos móviles */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(100%);
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
     }
-    
+
     .sidebar.expanded {
         transform: translateX(0);
     }
-    
+
+    .mobile-nav {
+        display: block;
+    }
+
     .main {
         margin-right: 0;
     }
-}
-
-
-        /* Main Content */
-        .main {
-    flex: 1;
-    padding: 20px;
-    margin-right: var(--sidebar-width); /* Espacio para el sidebar derecho */
 }
         
         .page-header {
@@ -1816,23 +1818,6 @@
         }
         
         @media (max-width: 768px) {
-            .sidebar {
-        transform: translateX(100%);
-        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .sidebar.expanded {
-        transform: translateX(0);
-    }
-            
-            .mobile-nav {
-                display: block;
-            }
-            
-            main {
-        margin-right: 0;
-    }
-            
             .cards-grid {
                 grid-template-columns: 1fr;
                 gap: 16px;
@@ -1866,16 +1851,16 @@
                 top: 16px;
                 right: 16px;
             }
-            
+
             .auth-card {
                 padding: 24px;
             }
-            
+
             .stat-card-value {
                 font-size: 24px;
             }
         }
-        
+
         @media (max-width: 576px) {
             .header-actions {
                 gap: 2px;
@@ -1947,7 +1932,7 @@
     </div>
     
     <!-- Main Application -->
-    <div class="app-content">
+    <div id="app" class="app">
         <!-- Header -->
         <header class="app-header">
             <button id="sidebar-toggle" class="header-toggle">
@@ -2193,7 +2178,7 @@
                 </div>
                 
                 <!-- Tareas View -->
-                <div id="view-tareas" class="view hidden">
+                <div id="view-tareas" class="view">
                     <div class="page-header">
                         <h1 class="page-title">Gestión de Tareas</h1>
                         <div class="page-actions">
@@ -2227,7 +2212,7 @@
                 </div>
                 
                 <!-- Levantamientos View -->
-                <div id="view-levantamientos" class="view hidden">
+                <div id="view-levantamientos" class="view">
                     <div class="page-header">
                         <h1 class="page-title">Levantamientos</h1>
                         <div class="page-actions">
@@ -2258,7 +2243,7 @@
                 </div>
                 
                 <!-- Reuniones View -->
-                <div id="view-reuniones" class="view hidden">
+                <div id="view-reuniones" class="view">
                     <div class="page-header">
                         <h1 class="page-title">Reuniones</h1>
                         <div class="page-actions">
@@ -2280,7 +2265,7 @@
                 </div>
                 
                 <!-- Calendario View -->
-                <div id="view-calendario" class="view hidden">
+                <div id="view-calendario" class="view">
                     <div class="page-header">
                         <h1 class="page-title">Calendario</h1>
                         <div class="page-actions">
@@ -2297,7 +2282,7 @@
                 </div>
                 
                 <!-- Informes View -->
-                <div id="view-informes" class="view hidden">
+                <div id="view-informes" class="view">
                     <div class="page-header">
                         <h1 class="page-title">Informes y Estadísticas</h1>
                     </div>
@@ -2336,7 +2321,7 @@
                 </div>
                 
                 <!-- Usuarios View -->
-                <div id="view-usuarios" class="view hidden">
+                <div id="view-usuarios" class="view">
                     <div class="page-header">
                         <h1 class="page-title">Gestión de Personal</h1>
                     </div>
