@@ -4939,8 +4939,23 @@ function updateNotificationsBadge(overdueCount = null) {
 // Chart Functions
 async function renderReports() {
     try {
-        // Destruir gráficos anteriores de manera segura
-        destroyAllCharts();
+        // Verificar si hay gráficos activos
+        if (hasActiveCharts()) {
+            console.log("Gráficos activos detectados, forzando limpieza...");
+            // Forzar destrucción de todos los gráficos
+            destroyAllCharts();
+            clearAllChartCanvases();
+            
+            // Esperar un momento para asegurar que se destruyan
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Si aún hay problemas, reiniciar completamente Chart.js
+            if (hasActiveCharts()) {
+                console.log("Problemas persistentes, reiniciando Chart.js...");
+                resetChartJS();
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
         
         const { data: tasks } = await supabase.from("tasks")
             .select("id, status, created_at, due_date")
@@ -4957,6 +4972,14 @@ async function renderReports() {
         
         // Create chart 1 - Distribution donut chart
         const ctx1 = qs("#chart1");
+        
+        // Limpiar el canvas antes de crear el gráfico
+        if (ctx1) {
+            const context = ctx1.getContext('2d');
+            if (context) {
+                context.clearRect(0, 0, ctx1.width, ctx1.height);
+            }
+        }
         
         // Define colors based on theme
         const isDarkMode = document.body.classList.contains('dark-mode');
@@ -5022,6 +5045,13 @@ async function renderReports() {
             }
         });
         
+        // Verificar que el gráfico se creó correctamente
+        if (charts.c1) {
+            console.log("Gráfico 1 creado exitosamente con ID:", charts.c1.id);
+        } else {
+            console.error("Error: No se pudo crear el gráfico 1");
+        }
+        
         // Group tasks by week
         const tasksByWeek = {};
         
@@ -5040,6 +5070,14 @@ async function renderReports() {
         
         // Create chart 2 - Weekly evolution line chart
         const ctx2 = qs("#chart2");
+        
+        // Limpiar el canvas antes de crear el gráfico
+        if (ctx2) {
+            const context = ctx2.getContext('2d');
+            if (context) {
+                context.clearRect(0, 0, ctx2.width, ctx2.height);
+            }
+        }
         
         const primaryColor = isDarkMode ? 'rgba(59, 130, 246, 1)' : 'rgba(0, 86, 164, 1)';
         const primaryColorLight = isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0, 86, 164, 0.1)';
@@ -5110,6 +5148,13 @@ async function renderReports() {
                 }
             }
         });
+        
+        // Verificar que el gráfico se creó correctamente
+        if (charts.c2) {
+            console.log("Gráfico 2 creado exitosamente con ID:", charts.c2.id);
+        } else {
+            console.error("Error: No se pudo crear el gráfico 2");
+        }
         
         // Render performance table
         await renderPerformance();
@@ -6200,19 +6245,116 @@ async function deleteMeeting(meetingId, meetingTitle) {
 // Función para destruir todos los gráficos de manera segura
 function destroyAllCharts() {
     try {
-        if (charts.c1 && typeof charts.c1.destroy === 'function') {
-            charts.c1.destroy();
-            charts.c1 = null;
-        }
-        if (charts.c2 && typeof charts.c2.destroy === 'function') {
-            charts.c2.destroy();
-            charts.c2 = null;
-        }
+        // Destruir todos los gráficos en el objeto charts
+        Object.keys(charts).forEach(key => {
+            if (charts[key] && typeof charts[key].destroy === 'function') {
+                try {
+                    charts[key].destroy();
+                } catch (e) {
+                    console.log(`Error destruyendo gráfico ${key}:`, e);
+                }
+            }
+        });
+        
         // Limpiar la variable charts
         charts = {};
+        
+        // Destruir TODOS los gráficos de Chart.js (por si acaso)
+        if (window.Chart && window.Chart.instances) {
+            window.Chart.instances.forEach(chart => {
+                try {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                } catch (e) {
+                    console.log("Error destruyendo instancia de Chart:", e);
+                }
+            });
+        }
+        
+        console.log("Todos los gráficos destruidos correctamente");
     } catch (e) {
-        console.log("Error destruyendo gráficos:", e);
+        console.log("Error en destroyAllCharts:", e);
         charts = {};
+    }
+}
+
+// Función para limpiar todos los canvas de Chart.js
+function clearAllChartCanvases() {
+    try {
+        // Buscar todos los canvas que puedan tener gráficos
+        const allCanvases = document.querySelectorAll('canvas[id^="chart"]');
+        
+        allCanvases.forEach(canvas => {
+            try {
+                // Obtener el contexto del canvas
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    // Limpiar el canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Restablecer el tamaño del canvas
+                    canvas.width = canvas.width;
+                    canvas.height = canvas.height;
+                }
+            } catch (e) {
+                console.log(`Error limpiando canvas ${canvas.id}:`, e);
+            }
+        });
+        
+        console.log("Todos los canvas limpiados correctamente");
+    } catch (e) {
+        console.log("Error en clearAllChartCanvases:", e);
+    }
+}
+
+// Función para verificar si hay gráficos activos
+function hasActiveCharts() {
+    try {
+        // Verificar si hay gráficos en nuestro objeto charts
+        const hasCharts = Object.keys(charts).length > 0;
+        
+        // Verificar si hay instancias activas de Chart.js
+        const hasChartInstances = window.Chart && window.Chart.instances && window.Chart.instances.length > 0;
+        
+        console.log(`Gráficos activos: ${hasCharts}, Instancias Chart.js: ${hasChartInstances}`);
+        return hasCharts || hasChartInstances;
+    } catch (e) {
+        console.log("Error verificando gráficos activos:", e);
+        return false;
+    }
+}
+
+// Función para reiniciar completamente Chart.js
+function resetChartJS() {
+    try {
+        console.log("Reiniciando Chart.js...");
+        
+        // Destruir todos los gráficos
+        destroyAllCharts();
+        clearAllChartCanvases();
+        
+        // Limpiar todas las instancias de Chart.js
+        if (window.Chart && window.Chart.instances) {
+            window.Chart.instances.forEach(chart => {
+                try {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                } catch (e) {
+                    console.log("Error destruyendo instancia durante reset:", e);
+                }
+            });
+        }
+        
+        // Forzar garbage collection si está disponible
+        if (window.gc) {
+            window.gc();
+        }
+        
+        console.log("Chart.js reiniciado correctamente");
+    } catch (e) {
+        console.log("Error reiniciando Chart.js:", e);
     }
 }
 </script>
