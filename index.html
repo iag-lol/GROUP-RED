@@ -622,6 +622,102 @@
             pointer-events: none;
         }
         
+        /* Indicador de actualización automática */
+        #btn-auto-refresh {
+            color: var(--success);
+            animation: pulse-green 2s infinite;
+        }
+        
+        #btn-auto-refresh:hover {
+            background-color: var(--success-transparent);
+            color: var(--success-dark);
+        }
+        
+        @keyframes pulse-green {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .dark-mode #btn-auto-refresh {
+            color: var(--success-light);
+        }
+        
+        .dark-mode #btn-auto-refresh:hover {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+        
+        /* Botón de reinicio de actualización */
+        #btn-restart-refresh {
+            color: var(--warning);
+            transition: all 0.15s ease;
+        }
+        
+        #btn-restart-refresh:hover {
+            background-color: var(--warning-transparent);
+            color: var(--warning-dark);
+            transform: rotate(180deg);
+        }
+        
+        .dark-mode #btn-restart-refresh {
+            color: var(--warning-light);
+        }
+        
+        .dark-mode #btn-restart-refresh:hover {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        /* Indicador de estado de conexión */
+        #btn-connection-status {
+            color: var(--success);
+            transition: all 0.15s ease;
+        }
+        
+        #btn-connection-status.connected {
+            color: var(--success);
+        }
+        
+        #btn-connection-status.disconnected {
+            color: var(--danger);
+            animation: pulse-red 1s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .dark-mode #btn-connection-status.connected {
+            color: var(--success-light);
+        }
+        
+        .dark-mode #btn-connection-status.disconnected {
+            color: var(--danger-light);
+        }
+        
+        /* Botón de limpieza de duplicados */
+        #btn-clean-duplicates {
+            color: var(--info);
+            transition: all 0.15s ease;
+        }
+        
+        #btn-clean-duplicates:hover {
+            background-color: var(--info-transparent);
+            color: var(--info-dark);
+        }
+        
+        .dark-mode #btn-clean-duplicates {
+            color: var(--info-light);
+        }
+        
+        .dark-mode #btn-clean-duplicates:hover {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: var(--info);
+        }
+        
         .dark-mode .header-icon-btn .badge {
             border-color: var(--panel-bg);
         }
@@ -1234,6 +1330,59 @@
         
         .dark-mode .btn-danger:hover {
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* Estilos específicos para botones de eliminación */
+        .btn-task-delete,
+        .btn-delete-meeting {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            border: 1px solid #c0392b;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-task-delete:hover,
+        .btn-delete-meeting:hover {
+            background: linear-gradient(to right, #c0392b, #a93226);
+            border-color: #a93226;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4);
+        }
+        
+        .btn-task-delete:active,
+        .btn-delete-meeting:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+        }
+        
+        .btn-task-delete::before,
+        .btn-delete-meeting::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-task-delete:hover::before,
+        .btn-delete-meeting:hover::before {
+            left: 100%;
+        }
+        
+        /* Animación de confirmación para botones de eliminación */
+        .btn-danger.confirming {
+            animation: pulse-danger 0.6s ease-in-out;
+        }
+        
+        @keyframes pulse-danger {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         /* Badges and Status Indicators */
@@ -1967,6 +2116,22 @@
                     <span class="badge" id="notifications-count">0</span>
                 </button>
                 
+                <button class="header-icon-btn" id="btn-auto-refresh" title="Actualización automática activa">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                </button>
+                
+                <button class="header-icon-btn" id="btn-restart-refresh" title="Reiniciar actualización automática">
+                    <i class="fas fa-redo"></i>
+                </button>
+                
+                <button class="header-icon-btn" id="btn-connection-status" title="Estado de conexión">
+                    <i class="fas fa-wifi"></i>
+                </button>
+                
+                <button class="header-icon-btn" id="btn-clean-duplicates" title="Limpiar duplicados" style="display: none;">
+                    <i class="fas fa-broom"></i>
+                </button>
+                
                 <button class="header-icon-btn" id="theme-toggle">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -2172,7 +2337,7 @@
                                     <div class="meeting-item-content">
                                         <div class="meeting-item-title">Cargando reuniones...</div>
                                         <div class="meeting-item-meta">
-                                            <span class="meeting-item-badge">
+                                            <span class="task-item-badge">
                                                 <i class="fas fa-spinner fa-spin"></i>
                                                 <span>Espere por favor</span>
                                             </span>
@@ -2464,8 +2629,8 @@
                     </div>
                     <div class="col-4">
                         <div class="form-group">
-                            <label class="form-label" for="nt-leader">Líder</label>
-                            <select class="form-control" id="nt-leader"></select>
+                            <label class="form-label">Líderes de Equipo</label>
+                            <div id="nt-leaders" class="row"></div>
                         </div>
                     </div>
                     <div class="col-4">
@@ -2699,7 +2864,9 @@
             calendar = null, 
             renderNonce = {}, 
             audioCtx = null, 
-            editMeetingId = null;
+            editMeetingId = null,
+            autoRefreshInterval = null,
+            lastUpdateTime = null;
         
         // Utility Functions
         function qs(s) { return document.querySelector(s); }
@@ -2798,7 +2965,7 @@
             return me && ['supervisor_admin','jefe_terminal'].includes(me.role);
         }
         function canCreateUsers() {
-            return me && me.role === 'supervisor_admin';
+            return me && ['supervisor_admin', 'jefe_terminal'].includes(me.role);
         }
 
         // Aplica la visibilidad de la UI según el rol
@@ -2987,6 +3154,9 @@ window.toggleSidebar = toggleSidebar;
                 setTimeout(() => {
                     toast(`Bienvenido al sistema, ${me.full_name}`, "ok");
                 }, 1000);
+                
+                // Iniciar actualización automática
+                startAutoRefresh();
             });
         }
         
@@ -3015,6 +3185,9 @@ window.toggleSidebar = toggleSidebar;
                 currentTask = null;
                 calendar = null;
                 renderNonce = {};
+                
+                // Detener actualización automática
+                stopAutoRefresh();
                 
                 // Limpiar audio context
                 if (audioCtx) {
@@ -3267,10 +3440,14 @@ function renderUsers() {
 }
 
 function populateSelectors() {
-    // Leader selector for tasks
-    const leaderSelect = qs("#nt-leader");
-    leaderSelect.innerHTML = `<option value="">Ninguno</option>` + 
-        supervisors.map(u => `<option value="${u.id}">${u.full_name}</option>`).join("");
+    // Leaders checkboxes for tasks
+    const leadersDiv = qs("#nt-leaders");
+    leadersDiv.innerHTML = supervisors.map(u => `
+        <label class="task-item-badge" style="margin-right: 8px; margin-bottom: 8px; cursor: pointer;">
+            <input type="checkbox" value="${u.id}" style="margin-right: 5px;">
+            ${u.full_name}
+        </label>
+    `).join("");
     
     // Inspectors checkboxes
     const inspectorsDiv = qs("#nt-inspectors");
@@ -3370,7 +3547,8 @@ async function createTask() {
     const desc = qs("#nt-desc").value.trim();
     const type = qs("#nt-type").value;
     const vis = qs("#nt-vis").value;
-    const leader = qs("#nt-leader").value || null;
+    // Get selected leaders
+    const selectedLeaders = Array.from(qs("#nt-leaders").querySelectorAll("input:checked")).map(i => i.value);
     const link = qs("#nt-link").value.trim() || null;
     const due = combineISO(qs("#nt-date").value, qs("#nt-time").value);
     
@@ -3379,8 +3557,8 @@ async function createTask() {
         return;
     }
     
-    if (type === "levantamiento" && !leader) {
-        toast("El líder es obligatorio para levantamientos", "warn");
+    if (type === "levantamiento" && selectedLeaders.length === 0) {
+        toast("Al menos un líder es obligatorio para levantamientos", "warn");
         return;
     }
     
@@ -3392,13 +3570,14 @@ async function createTask() {
         const file = qs("#nt-file").files[0];
         const fileUrl = await uploadFile(file, me.id);
         
-        // Create the task
+        // Create the task with the first leader as primary leader
+        const primaryLeader = selectedLeaders.length > 0 ? selectedLeaders[0] : null;
         const { data, error } = await supabase.from("tasks").insert([{
             title,
             description: desc,
             type,
             visibility: vis,
-            leader_id: leader,
+            leader_id: primaryLeader,
             created_by: me.id,
             due_date: due,
             attachment_url: fileUrl,
@@ -3439,7 +3618,7 @@ function clearNewTask() {
     ["#nt-title", "#nt-desc", "#nt-link", "#nt-date", "#nt-time"].forEach(s => qs(s).value = "");
     qs("#nt-type").value = "tarea";
     qs("#nt-vis").value = "todos";
-    qs("#nt-leader").value = "";
+    qs("#nt-leaders").querySelectorAll("input").forEach(i => i.checked = false);
     qs("#nt-file").value = "";
     qs("#nt-inspectors").querySelectorAll("input").forEach(i => i.checked = false);
 }
@@ -3527,24 +3706,37 @@ async function fetchTasks(filterStatus = "") {
         const { data: tasks } = await query;
         
         // Get task assignees
-        const { data: assignees } = await supabase.from("task_assignees").select("task_id, user_id");
-        
-        // Create a map of task_id -> [user_ids]
-        const assigneesMap = {};
-        if (assignees) {
-            assignees.forEach(a => {
-                if (!assigneesMap[a.task_id]) {
-                    assigneesMap[a.task_id] = [];
-                }
-                assigneesMap[a.task_id].push(a.user_id);
-            });
+        if (tasks && tasks.length > 0) {
+            const taskIds = tasks.map(t => t.id);
+            const { data: assignees } = await supabase.from("task_assignees")
+                .select("task_id, user_id")
+                .in("task_id", taskIds);
+            
+            // Create a map of task_id -> [user_ids], eliminando duplicados
+            const assigneesMap = {};
+            if (assignees) {
+                assignees.forEach(a => {
+                    if (!assigneesMap[a.task_id]) {
+                        assigneesMap[a.task_id] = [];
+                    }
+                    // Solo agregar si no está ya en la lista (evitar duplicados)
+                    if (!assigneesMap[a.task_id].includes(a.user_id)) {
+                        assigneesMap[a.task_id].push(a.user_id);
+                    }
+                });
+            }
+            
+            // Combine tasks with their assignees
+            return (tasks || []).map(task => ({
+                ...task,
+                assignees: assigneesMap[task.id] || []
+            }));
         }
         
-        // Combine tasks with their assignees
-        return (tasks || []).map(task => ({
-            ...task,
-            assignees: assigneesMap[task.id] || []
-        }));
+        // If no tasks, return empty array
+        return [];
+        
+
         
     } catch (err) {
         console.error("Error fetching tasks:", err);
@@ -3554,14 +3746,89 @@ async function fetchTasks(filterStatus = "") {
 }
 
 function visibleToMe(task) {
+    // Verificar que el usuario esté autenticado
+    if (!me || !me.id) return false;
+    
+    // Verificar que la tarea sea válida
+    if (!task) return false;
+    
     // Public tasks are visible to everyone
     if (task.visibility === "todos") return true;
     
-    // Tasks are visible to assignees, creator, leader, and managers
-    return task.assignees.includes(me.id) || 
+    // Tasks are visible to assignee, creator, leader, and managers
+    return isAssignedToMe(task.id) || 
            task.created_by === me.id || 
            task.leader_id === me.id || 
            canManage();
+}
+
+// Función auxiliar para verificar si el usuario actual está asignado a una tarea
+function isAssignedToMe(taskId) {
+    // Cache para evitar consultas repetidas
+    if (!window.taskAssigneesCache) {
+        window.taskAssigneesCache = new Map();
+    }
+    
+    // Si ya tenemos la información en cache, usarla
+    if (window.taskAssigneesCache.has(taskId)) {
+        return window.taskAssigneesCache.get(taskId).includes(me.id);
+    }
+    
+    // Por defecto, retornar false hasta que se cargue la información
+    return false;
+}
+
+// Función auxiliar para obtener el nombre del asignado de una tarea
+function getTaskAssignee(taskId) {
+    // Cache para evitar consultas repetidas
+    if (!window.taskAssigneesCache) {
+        window.taskAssigneesCache = new Map();
+    }
+    
+    // Si ya tenemos la información en cache, usarla
+    if (window.taskAssigneesCache.has(taskId)) {
+        const assigneeIds = window.taskAssigneesCache.get(taskId);
+        if (assigneeIds && assigneeIds.length > 0) {
+            return assigneeIds.map(id => nameOf(id)).join(", ");
+        }
+    }
+    
+    // Por defecto, retornar null hasta que se cargue la información
+    return null;
+}
+
+// Función para cargar y cachear los asignados de las tareas
+async function loadTaskAssignees(tasks) {
+    if (!tasks || tasks.length === 0) return;
+    
+    try {
+        const taskIds = tasks.map(t => t.id);
+        const { data: assignees } = await supabase.from("task_assignees")
+            .select("task_id, user_id")
+            .in("task_id", taskIds);
+        
+        if (assignees) {
+            // Inicializar cache si no existe
+            if (!window.taskAssigneesCache) {
+                window.taskAssigneesCache = new Map();
+            }
+            
+            // Agrupar asignados por tarea, eliminando duplicados
+            assignees.forEach(a => {
+                if (!window.taskAssigneesCache.has(a.task_id)) {
+                    window.taskAssigneesCache.set(a.task_id, []);
+                }
+                
+                // Solo agregar si no está ya en la lista (evitar duplicados)
+                const currentAssignees = window.taskAssigneesCache.get(a.task_id);
+                if (!currentAssignees.includes(a.user_id)) {
+                    currentAssignees.push(a.user_id);
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Error loading task assignees:", err);
+    }
 }
 
         // Task Rendering Functions
@@ -3594,11 +3861,16 @@ function visibleToMe(task) {
                 // Check if this render is still valid (no newer render was started)
                 if (renderNonce[containerId] !== nonce) return;
                 
+                // Cargar asignados de las tareas
+                await loadTaskAssignees(tasks);
+                
                 // Filter tasks
-                const filteredTasks = tasks.filter(t => 
-                    visibleToMe(t) && 
-                    (scope === "mias" ? (t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id) : true)
-                );
+                const filteredTasks = tasks.filter(t => {
+                    if (!t) return false;
+                    
+                    return visibleToMe(t) && 
+                        (scope === "mias" ? (isAssignedToMe(t.id) || t.leader_id === me.id || t.created_by === me.id) : true);
+                });
                 
                 container.innerHTML = "";
                 
@@ -3620,7 +3892,7 @@ function visibleToMe(task) {
                 }
                 
                 filteredTasks.forEach(task => {
-                    const assignees = task.assignees.map(id => nameOf(id)).join(", ");
+                    const assignee = getTaskAssignee(task.id);
                     const leader = task.leader_id ? nameOf(task.leader_id) : "—";
                     const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "terminada";
                     
@@ -3630,6 +3902,12 @@ function visibleToMe(task) {
                     else if (task.status === "terminada") statusClass = "task-item-status-completed";
                     
                     if (isOverdue) statusClass = "task-item-status-overdue";
+                    
+                    // Verificar si el usuario actual puede cambiar el estado de la tarea
+                    const canChangeStatus = isAssignedToMe(task.id) || 
+                                           task.leader_id === me.id || 
+                                           task.created_by === me.id || 
+                                           canManage();
                     
                     const row = document.createElement("div");
                     row.className = `task-item ${statusClass}`;
@@ -3645,10 +3923,10 @@ function visibleToMe(task) {
                                     <i class="fas fa-user"></i>
                                     <span>Líder: ${leader}</span>
                                 </span>
-                                ${assignees ? `
+                                ${assignee ? `
                                     <span class="task-item-badge">
-                                        <i class="fas fa-users"></i>
-                                        <span>Asignados: ${assignees}</span>
+                                        <i class="fas fa-user-check"></i>
+                                        <span>Asignado a: ${assignee}</span>
                                     </span>
                                 ` : ''}
                                 ${task.due_date ? `
@@ -3674,6 +3952,30 @@ function visibleToMe(task) {
                                 <i class="fas fa-external-link-alt"></i>
                                 <span>Abrir</span>
                             </button>
+                            ${canChangeStatus && task.status !== 'terminada' ? `
+                                ${task.status === 'pendiente' ? `
+                                    <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${task.id}', 'en_curso')">
+                                        <i class="fas fa-play"></i>
+                                        <span>Iniciar</span>
+                                    </button>
+                                ` : ''}
+                                ${task.status === 'en_curso' ? `
+                                    <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${task.id}', 'terminada')">
+                                        <i class="fas fa-check"></i>
+                                        <span>Completar</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" onclick="updateTaskStatus('${task.id}', 'pendiente')">
+                                        <i class="fas fa-pause"></i>
+                                        <span>Pausar</span>
+                                    </button>
+                                ` : ''}
+                            ` : ''}
+                            ${canManage() ? `
+                                <button class="btn btn-sm btn-danger" onclick="deleteTask('${task.id}', '${task.title}')" title="Eliminar tarea">
+                                    <i class="fas fa-trash"></i>
+                                    <span>Eliminar</span>
+                                </button>
+                            ` : ''}
                         </div>
                     `;
                     
@@ -3703,9 +4005,18 @@ function visibleToMe(task) {
 
 async function renderLevantamientos() {
     try {
+        // Verificar que el usuario esté autenticado
+        if (!me || !me.id) {
+            console.log("Usuario no autenticado, saltando renderizado de levantamientos");
+            return;
+        }
+        
         const tasks = (await fetchTasks("")).filter(t => 
-            t.type === "levantamiento" && visibleToMe(t)
+            t && t.type === "levantamiento" && visibleToMe(t)
         );
+        
+        // Cargar asignados de los levantamientos
+        await loadTaskAssignees(tasks);
         
         // Render levantamiento list
         const listContainer = qs("#lev-list");
@@ -3734,6 +4045,12 @@ async function renderLevantamientos() {
                 if (task.status === "pendiente") statusClass = "badge-pending";
                 else if (task.status === "en_curso") statusClass = "badge-progress";
                 else if (task.status === "terminada") statusClass = "badge-completed";
+                
+                // Verificar si el usuario actual puede cambiar el estado del levantamiento
+                const canChangeStatus = isAssignedToMe(task.id) || 
+                                       task.leader_id === me.id || 
+                                       task.created_by === me.id || 
+                                       canManage();
                 
                 el.innerHTML = `
                     <div class="task-item-content">
@@ -3769,6 +4086,30 @@ async function renderLevantamientos() {
                             <i class="fas fa-folder-open"></i>
                             <span>Abrir</span>
                         </button>
+                        ${canChangeStatus && task.status !== 'terminada' ? `
+                            ${task.status === 'pendiente' ? `
+                                <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${task.id}', 'en_curso')">
+                                    <i class="fas fa-play"></i>
+                                    <span>Iniciar</span>
+                                </button>
+                            ` : ''}
+                            ${task.status === 'en_curso' ? `
+                                <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${task.id}', 'terminada')">
+                                    <i class="fas fa-check"></i>
+                                    <span>Completar</span>
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="updateTaskStatus('${task.id}', 'pendiente')">
+                                    <i class="fas fa-pause"></i>
+                                    <span>Pausar</span>
+                                </button>
+                            ` : ''}
+                        ` : ''}
+                        ${canManage() ? `
+                            <button class="btn btn-sm btn-danger" onclick="deleteTask('${task.id}', '${task.title}')" title="Eliminar levantamiento">
+                                <i class="fas fa-trash"></i>
+                                <span>Eliminar</span>
+                            </button>
+                        ` : ''}
                     </div>
                 `;
                 
@@ -3930,7 +4271,7 @@ async function openTask(id) {
         actionsContainer.innerHTML = "";
         
         // Only show status change buttons if user has permission
-        const canChangeStatus = task.assignees?.includes(me.id) || 
+        const canChangeStatus = task.assigned_to === me.id || 
                                task.created_by === me.id || 
                                task.leader_id === me.id || 
                                canManage();
@@ -4157,34 +4498,121 @@ async function sendComment() {
     }
 }
 
-// Task Status Update Functions
-async function updateStatus(id, status) {
-    try {
-        // Update task status
-        await supabase.from("tasks").update({
-            status: status,
-            updated_at: new Date().toISOString()
-        }).eq("id", id);
+        // Task Status Update Functions
+        async function updateStatus(id, status) {
+            try {
+                // Update task status
+                await supabase.from("tasks").update({
+                    status: status,
+                    updated_at: new Date().toISOString()
+                }).eq("id", id);
+                
+                // Add system comment
+                await supabase.from("task_comments").insert([{
+                    task_id: id,
+                    user_id: me.id,
+                    content: "::status::" + status
+                }]);
+                
+                toast(`Estado actualizado a ${status}`, "ok", me.full_name);
+                sound();
+                
+                // Refresh UI
+                refreshAllIfOpen();
+                renderComments(id);
+                
+            } catch (err) {
+                console.error("Error updating status:", err);
+                toast("Error al actualizar estado", "bad");
+            }
+        }
         
-        // Add system comment
-        await supabase.from("task_comments").insert([{
-            task_id: id,
-            user_id: me.id,
-            content: "::status::" + status
-        }]);
-        
-        toast(`Estado actualizado a ${status}`, "ok", me.full_name);
-        sound();
-        
-        // Refresh UI
-        refreshAllIfOpen();
-        renderComments(id);
-        
-    } catch (err) {
-        console.error("Error updating status:", err);
-        toast("Error al actualizar estado", "bad");
-    }
-}
+        // Nueva función para actualizar estado desde las listas de tareas
+        async function updateTaskStatus(taskId, newStatus) {
+            try {
+                // Verificar que el usuario esté autenticado
+                if (!me || !me.id) {
+                    toast("Usuario no autenticado", "bad");
+                    return;
+                }
+                
+                console.log("Actualizando tarea:", taskId, "a estado:", newStatus, "para usuario:", me.id);
+                
+                // Verificar permisos
+                const { data: task, error } = await supabase.from("tasks")
+                    .select("id, title, status, leader_id, created_by")
+                    .eq("id", taskId)
+                    .single();
+                
+                if (error || !task) {
+                    console.error("Error fetching task:", error);
+                    toast("Tarea no encontrada", "bad");
+                    return;
+                }
+                
+                console.log("Tarea encontrada:", task);
+                
+                // Verificar si el usuario está asignado a esta tarea
+                const { data: assignees } = await supabase.from("task_assignees")
+                    .select("user_id")
+                    .eq("task_id", taskId);
+                
+                const isAssigned = assignees?.some(a => a.user_id === me.id) || 
+                                  task.leader_id === me.id || 
+                                  task.created_by === me.id || 
+                                  canManage();
+                
+                console.log("Puede cambiar estado:", isAssigned);
+                
+                if (!isAssigned) {
+                    toast("No tiene permisos para cambiar el estado de esta tarea", "bad");
+                    return;
+                }
+                
+                // Actualizar estado
+                const { error: updateError } = await supabase.from("tasks").update({
+                    status: newStatus,
+                    updated_at: new Date().toISOString()
+                }).eq("id", taskId);
+                
+                if (updateError) {
+                    console.error("Error updating task:", updateError);
+                    toast("Error al actualizar el estado de la tarea", "bad");
+                    return;
+                }
+                
+                console.log("Tarea actualizada exitosamente");
+                
+                // Agregar comentario del sistema
+                const { error: commentError } = await supabase.from("task_comments").insert([{
+                    task_id: taskId,
+                    user_id: me.id,
+                    content: "::status::" + newStatus
+                }]);
+                
+                if (commentError) {
+                    console.error("Error adding comment:", commentError);
+                    // No fallar si no se puede agregar el comentario
+                }
+                
+                // Mostrar notificación
+                const statusLabels = {
+                    'pendiente': 'Pendiente',
+                    'en_curso': 'En Curso',
+                    'terminada': 'Terminada'
+                };
+                
+                toast(`Tarea "${task.title}" actualizada a ${statusLabels[newStatus]}`, "ok", me.full_name);
+                sound();
+                
+                // Actualizar UI
+                refreshAll();
+                
+            } catch (err) {
+                console.error("Error updating task status:", err);
+                toast("Error al actualizar estado de la tarea", "bad");
+            }
+        }
 
 async function updateApproval(id, approval) {
     if (!canManage()) {
@@ -4222,12 +4650,23 @@ async function updateApproval(id, approval) {
 // Meeting Functions
 async function renderMeetings() {
     try {
+        // Verificar que el usuario esté autenticado
+        if (!me || !me.id) {
+            console.log("Usuario no autenticado, saltando renderizado de reuniones");
+            return;
+        }
+        
         const now = new Date().toISOString();
         
-        const { data: meetings } = await supabase.from("meetings")
+        const { data: meetings, error } = await supabase.from("meetings")
             .select("id, title, start_at, end_at, agenda, created_by")
             .gte("end_at", now)
             .order("start_at");
+            
+        if (error) {
+            console.error("Error fetching meetings:", error);
+            return;
+        }
         
         const meetingsContainer = qs("#list-meetings");
         const dashboardMeetingsContainer = qs("#list-next-meet");
@@ -4303,6 +4742,10 @@ async function renderMeetings() {
                     <button class="btn btn-sm btn-primary btn-edit-meeting" onclick="openEditMeeting('${meeting.id}')">
                         <i class="fas fa-edit"></i>
                         <span>Editar</span>
+                    </button>
+                    <button class="btn btn-sm btn-danger btn-delete-meeting" onclick="deleteMeeting('${meeting.id}', '${meeting.title}')" title="Eliminar reunión">
+                        <i class="fas fa-trash"></i>
+                        <span>Eliminar</span>
                     </button>` : ``}
                 </div>
             `;
@@ -4470,31 +4913,57 @@ async function posponeEditMeeting() {
 // KPI Functions
 async function loadKPIs() {
     try {
+        // Verificar que el usuario esté autenticado
+        if (!me || !me.id) {
+            console.log("Usuario no autenticado, saltando carga de KPIs");
+            return;
+        }
+        
         // Get pending tasks
-        const { data: pendingTasks } = await supabase.from("tasks")
+        const { data: pendingTasks, error: pendingError } = await supabase.from("tasks")
             .select("status, due_date")
             .eq("status", "pendiente");
+            
+        if (pendingError) {
+            console.error("Error fetching pending tasks:", pendingError);
+            return;
+        }
         
         // Get in-progress tasks
-        const { data: inProgressTasks } = await supabase.from("tasks")
+        const { data: inProgressTasks, error: inProgressError } = await supabase.from("tasks")
             .select("status")
             .eq("status", "en_curso");
+            
+        if (inProgressError) {
+            console.error("Error fetching in-progress tasks:", inProgressError);
+            return;
+        }
         
         // Get completed tasks
-        const { data: completedTasks } = await supabase.from("tasks")
+        const { data: completedTasks, error: completedError } = await supabase.from("tasks")
             .select("status")
             .eq("status", "terminada");
+            
+        if (completedError) {
+            console.error("Error fetching completed tasks:", completedError);
+            return;
+        }
         
         // Count overdue tasks
         const overdueTasks = (pendingTasks || [])
-            .filter(t => t.due_date && new Date(t.due_date) < new Date())
+            .filter(t => t && t.due_date && new Date(t.due_date) < new Date())
             .length;
         
         // Get upcoming meetings
         const now = new Date().toISOString();
-        const { data: meetings } = await supabase.from("meetings")
+        const { data: meetings, error: meetingsError } = await supabase.from("meetings")
             .select("id")
             .gte("end_at", now);
+            
+        if (meetingsError) {
+            console.error("Error fetching meetings:", meetingsError);
+            return;
+        }
         
         // Update KPI values with animation
         animateCounter("kpi-p", (pendingTasks || []).length);
@@ -4538,17 +5007,26 @@ function animateCounter(elementId, targetValue) {
 }
 
 function updateNotificationsBadge(overdueCount = null) {
+    // Verificar que el usuario esté autenticado
+    if (!me || !me.id) {
+        console.log("Usuario no autenticado, saltando actualización de badge");
+        return;
+    }
+    
     // If overdueCount is not provided, calculate it
     if (overdueCount === null) {
         fetchTasks().then(tasks => {
             const overdueTasks = tasks.filter(t => 
-                t.due_date && 
+                t && t.due_date && 
                 new Date(t.due_date) < new Date() && 
                 t.status !== "terminada" &&
-                (t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id)
+                (isAssignedToMe(t.id) || t.leader_id === me.id || t.created_by === me.id)
             );
             
             updateBadge(overdueTasks.length);
+        }).catch(err => {
+            console.error("Error calculating overdue tasks:", err);
+            updateBadge(0);
         });
     } else {
         updateBadge(overdueCount);
@@ -4892,17 +5370,31 @@ async function renderPerformance() {
 // Calendar Functions
 async function renderCalendar() {
     try {
-        const scope = qs("#cal-scope").value;
+        // Verificar que el usuario esté autenticado
+        if (!me || !me.id) {
+            console.log("Usuario no autenticado, saltando renderizado del calendario");
+            return;
+        }
+        
+        const scopeEl = qs("#cal-scope");
+        if (!scopeEl) {
+            console.log("Elemento cal-scope no encontrado, saltando renderizado del calendario");
+            return;
+        }
+        
+        const scope = scopeEl.value;
         
         // Get tasks
         const tasks = await fetchTasks("");
         
         // Filter tasks by scope
-        const filteredTasks = tasks.filter(t => 
-            scope === "mias" ? 
-                t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id 
-                : visibleToMe(t)
-        );
+        const filteredTasks = tasks.filter(t => {
+            if (!t || !t.assigned_to) return false;
+            
+            return scope === "mias" ? 
+                t.assigned_to === me.id || t.leader_id === me.id || t.created_by === me.id 
+                : visibleToMe(t);
+        });
         
         // Get meetings
         const { data: meetings } = await supabase.from("meetings")
@@ -5006,6 +5498,7 @@ async function renderCalendar() {
             height: 'auto',
             locale: "es",
             timeZone: "local",
+            firstDay: 1, // Comenzar semana desde el lunes (0=domingo, 1=lunes)
             events: events,
             timeFormat: {
                 hour: '2-digit',
@@ -5143,10 +5636,10 @@ function handleMentionClick(e) {
 function overdueScan() {
     fetchTasks().then(tasks => {
         const overdueTasks = tasks.filter(t => 
-            t.due_date && 
+            t && t.due_date && 
             new Date(t.due_date) < new Date() && 
             t.status !== "terminada" &&
-            (t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id)
+            (t.assigned_to === me.id || t.leader_id === me.id || t.created_by === me.id)
         );
         
         if (overdueTasks.length > 0) {
@@ -5212,8 +5705,129 @@ function initRealtime() {
             loadKPIs();
             renderCalendar();
         })
-        .subscribe();
-}
+                .subscribe();
+        }
+        
+        // Sistema de actualización automática cada 3 segundos
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+                            autoRefreshInterval = setInterval(async () => {
+            if (!me || !me.id) return; // Solo si hay usuario autenticado
+            
+            try {
+                // Verificar si hay cambios en las tareas
+                const { data: recentTasks, error } = await supabase.from("tasks")
+                    .select("id, title, status, updated_at, leader_id, created_by")
+                    .gte("updated_at", lastUpdateTime || new Date(Date.now() - 60000).toISOString())
+                    .order("updated_at", { ascending: false })
+                    .limit(10);
+                
+                if (error) {
+                    console.error("Error fetching recent tasks:", error);
+                    // Si es un error de conexión, pausar la actualización por un tiempo
+                    if (error.message && error.message.includes('Failed to fetch')) {
+                        console.log("Error de conexión detectado, pausando actualización automática por 30 segundos");
+                        stopAutoRefresh();
+                        setTimeout(() => {
+                            if (me && me.id) startAutoRefresh();
+                        }, 30000);
+                    }
+                    return;
+                }
+                
+                if (recentTasks && recentTasks.length > 0) {
+                    // Actualizar timestamp de última actualización
+                    lastUpdateTime = new Date().toISOString();
+                    
+                    console.log(`Actualización automática: ${recentTasks.length} tareas recientes`);
+                    
+                    // Verificar si hay tareas nuevas o actualizadas que requieran notificación
+                    // Para esto necesitamos verificar si el usuario está asignado a estas tareas
+                    for (const task of recentTasks) {
+                        try {
+                            const { data: assignees } = await supabase.from("task_assignees")
+                                .select("user_id")
+                                .eq("task_id", task.id);
+                            
+                            const isAssigned = assignees?.some(a => a.user_id === me.id) || 
+                                              task.leader_id === me.id || 
+                                              task.created_by === me.id;
+                            
+                            if (isAssigned) {
+                                console.log(`Tarea actualizada: ${task.title} - Estado: ${task.status}`);
+                            }
+                        } catch (assigneeError) {
+                            console.error("Error verificando asignados:", assigneeError);
+                        }
+                    }
+                    
+                    // Actualizar UI silenciosamente
+                    refreshAllSilent();
+                }
+                
+                // Actualizar KPIs solo si no hay errores
+                try {
+                    await loadKPIs();
+                } catch (kpiError) {
+                    console.error("Error updating KPIs:", kpiError);
+                }
+                
+            } catch (err) {
+                console.error("Error en actualización automática:", err);
+                // Si es un error de conexión, pausar la actualización
+                if (err.message && err.message.includes('Failed to fetch')) {
+                    console.log("Error de conexión detectado, pausando actualización automática por 30 segundos");
+                    stopAutoRefresh();
+                    setTimeout(() => {
+                        if (me && me.id) startAutoRefresh();
+                    }, 30000);
+                }
+            }
+        }, 3000); // Cada 3 segundos
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            console.log("Actualización automática detenida");
+        }
+        
+        // Función para reiniciar la actualización automática
+        function restartAutoRefresh() {
+            stopAutoRefresh();
+            if (me && me.id) {
+                startAutoRefresh();
+                console.log("Actualización automática reiniciada");
+            }
+        }
+        
+        // Función para actualizar UI sin mostrar notificaciones
+        function refreshAllSilent() {
+            try {
+                // Verificar que el usuario esté autenticado
+                if (!me || !me.id) return;
+                
+                // Actualizar listas sin mostrar mensajes
+                renderTaskList("#list-dashboard");
+                renderTaskList("#list-tasks");
+                renderLevantamientos();
+                renderMeetings();
+                
+                // Solo renderizar calendario si no hay errores
+                try {
+                    renderCalendar();
+                } catch (calendarError) {
+                    console.error("Error rendering calendar:", calendarError);
+                }
+            } catch (err) {
+                console.error("Error in refreshAllSilent:", err);
+            }
+        }
 
 // Modal functions
 function openModal(modalId) {
@@ -5428,10 +6042,10 @@ document.addEventListener("DOMContentLoaded", () => {
     qs('#btn-notifications').addEventListener('click', () => {
         fetchTasks().then(tasks => {
             const overdueTasks = tasks.filter(t => 
-                t.due_date && 
+                t && t.due_date && 
                 new Date(t.due_date) < new Date() && 
                 t.status !== "terminada" &&
-                (t.assignees.includes(me.id) || t.leader_id === me.id || t.created_by === me.id)
+                (t.assigned_to === me.id || t.leader_id === me.id || t.created_by === me.id)
             );
             
             if (overdueTasks.length === 0) {
@@ -5447,6 +6061,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
         });
+    });
+    
+    // Auto refresh info button
+    qs('#btn-auto-refresh').addEventListener('click', () => {
+        toast('Sistema de actualización automática activo cada 3 segundos', 'info');
+    });
+    
+    // Restart auto refresh button
+    qs('#btn-restart-refresh').addEventListener('click', () => {
+        restartAutoRefresh();
+        toast('Actualización automática reiniciada', 'ok');
+    });
+    
+    // Connection status button
+    qs('#btn-connection-status').addEventListener('click', () => {
+        checkConnectionStatus();
+    });
+    
+    // Clean duplicates button
+    qs('#btn-clean-duplicates').addEventListener('click', () => {
+        if (confirm("¿Está seguro que desea limpiar los registros duplicados? Esta acción no se puede deshacer.")) {
+            cleanDuplicateAssignments();
+        }
     });
     
     // Check saved dark mode preference
@@ -5468,10 +6105,348 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Export functions for external access
-window.openTask = openTask;
-window.openEditMeeting = openEditMeeting;
+        // Export functions for external access
+        window.openTask = openTask;
+        window.openEditMeeting = openEditMeeting;
+        window.updateTaskStatus = updateTaskStatus;
+        window.cleanDuplicateAssignments = cleanDuplicateAssignments;
+        window.deleteTask = deleteTask;
+        window.deleteMeeting = deleteMeeting;
 
+// Función auxiliar para verificar si el usuario actual está asignado a una tarea
+function isAssignedToMe(taskId) {
+    // Cache para evitar consultas repetidas
+    if (!window.taskAssigneesCache) {
+        window.taskAssigneesCache = new Map();
+    }
+    
+    // Si ya tenemos la información en cache, usarla
+    if (window.taskAssigneesCache.has(taskId)) {
+        return window.taskAssigneesCache.get(taskId).includes(me.id);
+    }
+    
+    // Por defecto, retornar false hasta que se cargue la información
+    return false;
+}
+
+// Función auxiliar para obtener el nombre del asignado de una tarea
+function getTaskAssignee(taskId) {
+    // Cache para evitar consultas repetidas
+    if (!window.taskAssigneesCache) {
+        window.taskAssigneesCache = new Map();
+    }
+    
+    // Si ya tenemos la información en cache, usarla
+    if (window.taskAssigneesCache.has(taskId)) {
+        const assigneeIds = window.taskAssigneesCache.get(taskId);
+        if (assigneeIds && assigneeIds.length > 0) {
+            return assigneeIds.map(id => nameOf(id)).join(", ");
+        }
+    }
+    
+    // Por defecto, retornar null hasta que se cargue la información
+    return null;
+}
+
+// Función para cargar y cachear los asignados de las tareas
+async function loadTaskAssignees(tasks) {
+    if (!tasks || tasks.length === 0) return;
+    
+    try {
+        const taskIds = tasks.map(t => t.id);
+        const { data: assignees } = await supabase.from("task_assignees")
+            .select("task_id, user_id")
+            .in("task_id", taskIds);
+        
+        if (assignees) {
+            // Inicializar cache si no existe
+            if (!window.taskAssigneesCache) {
+                window.taskAssigneesCache = new Map();
+            }
+            
+            // Agrupar asignados por tarea, eliminando duplicados
+            assignees.forEach(a => {
+                if (!window.taskAssigneesCache.has(a.task_id)) {
+                    window.taskAssigneesCache.set(a.task_id, []);
+                }
+                
+                // Solo agregar si no está ya en la lista (evitar duplicados)
+                const currentAssignees = window.taskAssigneesCache.get(a.task_id);
+                if (!currentAssignees.includes(a.user_id)) {
+                    currentAssignees.push(a.user_id);
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Error loading task assignees:", err);
+    }
+}
+
+// Función para verificar el estado de la conexión
+async function checkConnectionStatus() {
+    try {
+        const connectionBtn = qs('#btn-connection-status');
+        const icon = connectionBtn.querySelector('i');
+        
+        // Cambiar a estado de verificación
+        icon.className = 'fas fa-spinner fa-spin';
+        connectionBtn.title = 'Verificando conexión...';
+        
+        // Intentar una consulta simple a Supabase
+        const { data, error } = await supabase.from("tasks").select("id").limit(1);
+        
+        if (error) {
+            // Error de conexión
+            icon.className = 'fas fa-wifi-slash';
+            connectionBtn.className = 'header-icon-btn disconnected';
+            connectionBtn.title = 'Error de conexión: ' + (error.message || 'Desconocido');
+            toast('Error de conexión con la base de datos', 'bad');
+            
+            // Mostrar botón de limpieza si hay problemas de conexión
+            const cleanBtn = qs('#btn-clean-duplicates');
+            if (cleanBtn) cleanBtn.style.display = 'flex';
+        } else {
+            // Conexión exitosa
+            icon.className = 'fas fa-wifi';
+            connectionBtn.className = 'header-icon-btn connected';
+            connectionBtn.title = 'Conexión establecida';
+            toast('Conexión establecida correctamente', 'ok');
+            
+            // Ocultar botón de limpieza si la conexión está bien
+            const cleanBtn = qs('#btn-clean-duplicates');
+            if (cleanBtn) cleanBtn.style.display = 'none';
+        }
+        
+        // Restaurar estado después de 5 segundos
+        setTimeout(() => {
+            if (connectionBtn.classList.contains('connected')) {
+                icon.className = 'fas fa-wifi';
+                connectionBtn.title = 'Estado de conexión';
+            }
+        }, 5000);
+        
+    } catch (err) {
+        console.error("Error checking connection:", err);
+        const connectionBtn = qs('#btn-connection-status');
+        const icon = connectionBtn.querySelector('i');
+        
+        icon.className = 'fas fa-wifi-slash';
+        connectionBtn.className = 'header-icon-btn disconnected';
+        connectionBtn.title = 'Error de conexión: ' + err.message;
+        toast('Error al verificar conexión', 'bad');
+    }
+}
+
+// Función para limpiar registros duplicados de asignaciones
+async function cleanDuplicateAssignments() {
+    try {
+        console.log("Iniciando limpieza de asignaciones duplicadas...");
+        
+        // Obtener todas las asignaciones
+        const { data: allAssignments, error } = await supabase.from("task_assignees")
+            .select("id, task_id, user_id, created_at")
+            .order("created_at", { ascending: true });
+        
+        if (error) {
+            console.error("Error obteniendo asignaciones:", error);
+            return;
+        }
+        
+        // Agrupar por task_id y user_id para encontrar duplicados
+        const assignmentGroups = {};
+        const duplicatesToDelete = [];
+        
+        allAssignments.forEach(assignment => {
+            const key = `${assignment.task_id}-${assignment.user_id}`;
+            
+            if (!assignmentGroups[key]) {
+                assignmentGroups[key] = [];
+            }
+            
+            assignmentGroups[key].push(assignment);
+        });
+        
+        // Identificar duplicados (mantener el más antiguo, eliminar los demás)
+        Object.values(assignmentGroups).forEach(group => {
+            if (group.length > 1) {
+                // Ordenar por fecha de creación (más antiguo primero)
+                group.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                
+                // Mantener el primero (más antiguo), marcar los demás para eliminar
+                const toKeep = group[0];
+                const toDelete = group.slice(1);
+                
+                console.log(`Tarea ${toKeep.task_id} - Usuario ${toKeep.user_id}: Manteniendo 1, eliminando ${toDelete.length} duplicados`);
+                
+                duplicatesToDelete.push(...toDelete.map(d => d.id));
+            }
+        });
+        
+        if (duplicatesToDelete.length > 0) {
+            // Eliminar duplicados
+            const { error: deleteError } = await supabase.from("task_assignees")
+                .delete()
+                .in("id", duplicatesToDelete);
+            
+            if (deleteError) {
+                console.error("Error eliminando duplicados:", deleteError);
+                toast("Error al limpiar duplicados", "bad");
+                return;
+            }
+            
+            console.log(`Limpieza completada: ${duplicatesToDelete.length} registros duplicados eliminados`);
+            toast(`Limpieza completada: ${duplicatesToDelete.length} duplicados eliminados`, "ok");
+            
+            // Limpiar cache y refrescar UI
+            if (window.taskAssigneesCache) {
+                window.taskAssigneesCache.clear();
+            }
+            refreshAll();
+        } else {
+            console.log("No se encontraron duplicados para limpiar");
+            toast("No se encontraron duplicados para limpiar", "info");
+        }
+        
+    } catch (err) {
+        console.error("Error en limpieza de duplicados:", err);
+        toast("Error durante la limpieza", "bad");
+    }
+}
+
+// Función para eliminar tareas (solo para administradores y jefes de terminal)
+async function deleteTask(taskId, taskTitle) {
+    try {
+        // Verificar permisos
+        if (!canManage()) {
+            toast("No tienes permisos para eliminar tareas", "bad");
+            return;
+        }
+
+        // Confirmar eliminación
+        const confirmed = confirm(`¿Estás seguro de que quieres eliminar la tarea "${taskTitle}"?\n\nEsta acción no se puede deshacer y eliminará:\n• La tarea completa\n• Todas las asignaciones\n• Todos los comentarios\n• Todos los archivos asociados`);
+        
+        if (!confirmed) return;
+
+        // Mostrar loading
+        toast("Eliminando tarea...", "info");
+
+        // 1. Eliminar comentarios de la tarea
+        const { error: commentsError } = await supabase
+            .from("task_comments")
+            .delete()
+            .eq("task_id", taskId);
+        
+        if (commentsError) {
+            console.error("Error eliminando comentarios:", commentsError);
+        }
+
+        // 2. Eliminar archivos de la tarea
+        const { error: filesError } = await supabase
+            .from("Group_Red_Task_Files")
+            .delete()
+            .eq("task_id", taskId);
+        
+        if (filesError) {
+            console.error("Error eliminando archivos:", filesError);
+        }
+
+        // 3. Eliminar asignaciones de la tarea
+        const { error: assigneesError } = await supabase
+            .from("task_assignees")
+            .delete()
+            .eq("task_id", taskId);
+        
+        if (assigneesError) {
+            console.error("Error eliminando asignaciones:", assigneesError);
+        }
+
+        // 4. Eliminar la tarea principal
+        const { error: taskError } = await supabase
+            .from("tasks")
+            .delete()
+            .eq("id", taskId);
+        
+        if (taskError) {
+            console.error("Error eliminando tarea:", taskError);
+            toast("Error al eliminar la tarea", "bad");
+            return;
+        }
+
+        // Limpiar cache local
+        if (window.taskAssigneesCache) {
+            window.taskAssigneesCache.delete(taskId);
+        }
+
+        // Mostrar éxito
+        toast(`Tarea "${taskTitle}" eliminada exitosamente`, "ok");
+        sound();
+
+        // Refrescar la interfaz
+        renderTaskList("#list-dashboard");
+        renderTaskList("#list-tasks");
+        renderLevantamientos();
+        renderCalendar();
+        loadKPIs();
+
+    } catch (err) {
+        console.error("Error eliminando tarea:", err);
+        toast("Error al eliminar la tarea", "bad");
+    }
+}
+
+// Función para eliminar reuniones (solo para administradores y jefes de terminal)
+async function deleteMeeting(meetingId, meetingTitle) {
+    try {
+        // Verificar permisos
+        if (!canManage()) {
+            toast("No tienes permisos para eliminar reuniones", "bad");
+            return;
+        }
+
+        // Confirmar eliminación
+        const confirmed = confirm(`¿Estás seguro de que quieres eliminar la reunión "${meetingTitle}"?\n\nEsta acción no se puede deshacer y eliminará:\n• La reunión completa\n• Todos los asistentes registrados`);
+        
+        if (!confirmed) return;
+
+        // Mostrar loading
+        toast("Eliminando reunión...", "info");
+
+        // 1. Eliminar asistentes de la reunión
+        const { error: attendeesError } = await supabase
+            .from("meeting_attendees")
+            .delete()
+            .eq("meeting_id", meetingId);
+        
+        if (attendeesError) {
+            console.error("Error eliminando asistentes:", attendeesError);
+        }
+
+        // 2. Eliminar la reunión principal
+        const { error: meetingError } = await supabase
+            .from("meetings")
+            .delete()
+            .eq("id", meetingId);
+        
+        if (meetingError) {
+            console.error("Error eliminando reunión:", meetingError);
+            toast("Error al eliminar la reunión", "bad");
+            return;
+        }
+
+        // Mostrar éxito
+        toast(`Reunión "${meetingTitle}" eliminada exitosamente`, "ok");
+        sound();
+
+        // Refrescar la interfaz
+        renderMeetings();
+        renderCalendar();
+        loadKPIs();
+
+    } catch (err) {
+        console.error("Error eliminando reunión:", err);
+        toast("Error al eliminar la reunión", "bad");
+    }
+}
 </script>
 
 </body>
