@@ -622,101 +622,7 @@
             pointer-events: none;
         }
         
-        /* Indicador de actualización automática */
-        #btn-auto-refresh {
-            color: var(--success);
-            animation: pulse-green 2s infinite;
-        }
-        
-        #btn-auto-refresh:hover {
-            background-color: var(--success-transparent);
-            color: var(--success-dark);
-        }
-        
-        @keyframes pulse-green {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        
-        .dark-mode #btn-auto-refresh {
-            color: var(--success-light);
-        }
-        
-        .dark-mode #btn-auto-refresh:hover {
-            background-color: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-        }
-        
-        /* Botón de reinicio de actualización */
-        #btn-restart-refresh {
-            color: var(--warning);
-            transition: all 0.15s ease;
-        }
-        
-        #btn-restart-refresh:hover {
-            background-color: var(--warning-transparent);
-            color: var(--warning-dark);
-            transform: rotate(180deg);
-        }
-        
-        .dark-mode #btn-restart-refresh {
-            color: var(--warning-light);
-        }
-        
-        .dark-mode #btn-restart-refresh:hover {
-            background-color: rgba(245, 158, 11, 0.15);
-            color: var(--warning);
-        }
-        
-        /* Indicador de estado de conexión */
-        #btn-connection-status {
-            color: var(--success);
-            transition: all 0.15s ease;
-        }
-        
-        #btn-connection-status.connected {
-            color: var(--success);
-        }
-        
-        #btn-connection-status.disconnected {
-            color: var(--danger);
-            animation: pulse-red 1s infinite;
-        }
-        
-        @keyframes pulse-red {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        .dark-mode #btn-connection-status.connected {
-            color: var(--success-light);
-        }
-        
-        .dark-mode #btn-connection-status.disconnected {
-            color: var(--danger-light);
-        }
-        
-        /* Botón de limpieza de duplicados */
-        #btn-clean-duplicates {
-            color: var(--info);
-            transition: all 0.15s ease;
-        }
-        
-        #btn-clean-duplicates:hover {
-            background-color: var(--info-transparent);
-            color: var(--info-dark);
-        }
-        
-        .dark-mode #btn-clean-duplicates {
-            color: var(--info-light);
-        }
-        
-        .dark-mode #btn-clean-duplicates:hover {
-            background-color: rgba(59, 130, 246, 0.15);
-            color: var(--info);
-        }
+
         
         .dark-mode .header-icon-btn .badge {
             border-color: var(--panel-bg);
@@ -2116,21 +2022,7 @@
                     <span class="badge" id="notifications-count">0</span>
                 </button>
                 
-                <button class="header-icon-btn" id="btn-auto-refresh" title="Actualización automática activa">
-                    <i class="fas fa-sync-alt fa-spin"></i>
-                </button>
-                
-                <button class="header-icon-btn" id="btn-restart-refresh" title="Reiniciar actualización automática">
-                    <i class="fas fa-redo"></i>
-                </button>
-                
-                <button class="header-icon-btn" id="btn-connection-status" title="Estado de conexión">
-                    <i class="fas fa-wifi"></i>
-                </button>
-                
-                <button class="header-icon-btn" id="btn-clean-duplicates" title="Limpiar duplicados" style="display: none;">
-                    <i class="fas fa-broom"></i>
-                </button>
+
                 
                 <button class="header-icon-btn" id="theme-toggle">
                     <i class="fas fa-moon"></i>
@@ -3181,7 +3073,10 @@ window.toggleSidebar = toggleSidebar;
                 users = [];
                 supervisors = [];
                 inspectors = [];
-                charts = {};
+                
+                // Destruir gráficos de manera segura
+                destroyAllCharts();
+                
                 currentTask = null;
                 calendar = null;
                 renderNonce = {};
@@ -5044,6 +4939,9 @@ function updateNotificationsBadge(overdueCount = null) {
 // Chart Functions
 async function renderReports() {
     try {
+        // Destruir gráficos anteriores de manera segura
+        destroyAllCharts();
+        
         const { data: tasks } = await supabase.from("tasks")
             .select("id, status, created_at, due_date")
             .order("created_at");
@@ -5059,7 +4957,6 @@ async function renderReports() {
         
         // Create chart 1 - Distribution donut chart
         const ctx1 = qs("#chart1");
-        if (charts.c1) charts.c1.destroy();
         
         // Define colors based on theme
         const isDarkMode = document.body.classList.contains('dark-mode');
@@ -5143,7 +5040,6 @@ async function renderReports() {
         
         // Create chart 2 - Weekly evolution line chart
         const ctx2 = qs("#chart2");
-        if (charts.c2) charts.c2.destroy();
         
         const primaryColor = isDarkMode ? 'rgba(59, 130, 246, 1)' : 'rgba(0, 86, 164, 1)';
         const primaryColorLight = isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0, 86, 164, 0.1)';
@@ -6063,28 +5959,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
     
-    // Auto refresh info button
-    qs('#btn-auto-refresh').addEventListener('click', () => {
-        toast('Sistema de actualización automática activo cada 3 segundos', 'info');
-    });
-    
-    // Restart auto refresh button
-    qs('#btn-restart-refresh').addEventListener('click', () => {
-        restartAutoRefresh();
-        toast('Actualización automática reiniciada', 'ok');
-    });
-    
-    // Connection status button
-    qs('#btn-connection-status').addEventListener('click', () => {
-        checkConnectionStatus();
-    });
-    
-    // Clean duplicates button
-    qs('#btn-clean-duplicates').addEventListener('click', () => {
-        if (confirm("¿Está seguro que desea limpiar los registros duplicados? Esta acción no se puede deshacer.")) {
-            cleanDuplicateAssignments();
-        }
-    });
+
     
     // Check saved dark mode preference
     if (localStorage.getItem('darkMode') === 'true') {
@@ -6109,9 +5984,10 @@ document.addEventListener("DOMContentLoaded", () => {
         window.openTask = openTask;
         window.openEditMeeting = openEditMeeting;
         window.updateTaskStatus = updateTaskStatus;
-        window.cleanDuplicateAssignments = cleanDuplicateAssignments;
         window.deleteTask = deleteTask;
         window.deleteMeeting = deleteMeeting;
+        
+
 
 // Función auxiliar para verificar si el usuario actual está asignado a una tarea
 function isAssignedToMe(taskId) {
@@ -6182,136 +6058,9 @@ async function loadTaskAssignees(tasks) {
     }
 }
 
-// Función para verificar el estado de la conexión
-async function checkConnectionStatus() {
-    try {
-        const connectionBtn = qs('#btn-connection-status');
-        const icon = connectionBtn.querySelector('i');
-        
-        // Cambiar a estado de verificación
-        icon.className = 'fas fa-spinner fa-spin';
-        connectionBtn.title = 'Verificando conexión...';
-        
-        // Intentar una consulta simple a Supabase
-        const { data, error } = await supabase.from("tasks").select("id").limit(1);
-        
-        if (error) {
-            // Error de conexión
-            icon.className = 'fas fa-wifi-slash';
-            connectionBtn.className = 'header-icon-btn disconnected';
-            connectionBtn.title = 'Error de conexión: ' + (error.message || 'Desconocido');
-            toast('Error de conexión con la base de datos', 'bad');
-            
-            // Mostrar botón de limpieza si hay problemas de conexión
-            const cleanBtn = qs('#btn-clean-duplicates');
-            if (cleanBtn) cleanBtn.style.display = 'flex';
-        } else {
-            // Conexión exitosa
-            icon.className = 'fas fa-wifi';
-            connectionBtn.className = 'header-icon-btn connected';
-            connectionBtn.title = 'Conexión establecida';
-            toast('Conexión establecida correctamente', 'ok');
-            
-            // Ocultar botón de limpieza si la conexión está bien
-            const cleanBtn = qs('#btn-clean-duplicates');
-            if (cleanBtn) cleanBtn.style.display = 'none';
-        }
-        
-        // Restaurar estado después de 5 segundos
-        setTimeout(() => {
-            if (connectionBtn.classList.contains('connected')) {
-                icon.className = 'fas fa-wifi';
-                connectionBtn.title = 'Estado de conexión';
-            }
-        }, 5000);
-        
-    } catch (err) {
-        console.error("Error checking connection:", err);
-        const connectionBtn = qs('#btn-connection-status');
-        const icon = connectionBtn.querySelector('i');
-        
-        icon.className = 'fas fa-wifi-slash';
-        connectionBtn.className = 'header-icon-btn disconnected';
-        connectionBtn.title = 'Error de conexión: ' + err.message;
-        toast('Error al verificar conexión', 'bad');
-    }
-}
 
-// Función para limpiar registros duplicados de asignaciones
-async function cleanDuplicateAssignments() {
-    try {
-        console.log("Iniciando limpieza de asignaciones duplicadas...");
-        
-        // Obtener todas las asignaciones
-        const { data: allAssignments, error } = await supabase.from("task_assignees")
-            .select("id, task_id, user_id, created_at")
-            .order("created_at", { ascending: true });
-        
-        if (error) {
-            console.error("Error obteniendo asignaciones:", error);
-            return;
-        }
-        
-        // Agrupar por task_id y user_id para encontrar duplicados
-        const assignmentGroups = {};
-        const duplicatesToDelete = [];
-        
-        allAssignments.forEach(assignment => {
-            const key = `${assignment.task_id}-${assignment.user_id}`;
-            
-            if (!assignmentGroups[key]) {
-                assignmentGroups[key] = [];
-            }
-            
-            assignmentGroups[key].push(assignment);
-        });
-        
-        // Identificar duplicados (mantener el más antiguo, eliminar los demás)
-        Object.values(assignmentGroups).forEach(group => {
-            if (group.length > 1) {
-                // Ordenar por fecha de creación (más antiguo primero)
-                group.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-                
-                // Mantener el primero (más antiguo), marcar los demás para eliminar
-                const toKeep = group[0];
-                const toDelete = group.slice(1);
-                
-                console.log(`Tarea ${toKeep.task_id} - Usuario ${toKeep.user_id}: Manteniendo 1, eliminando ${toDelete.length} duplicados`);
-                
-                duplicatesToDelete.push(...toDelete.map(d => d.id));
-            }
-        });
-        
-        if (duplicatesToDelete.length > 0) {
-            // Eliminar duplicados
-            const { error: deleteError } = await supabase.from("task_assignees")
-                .delete()
-                .in("id", duplicatesToDelete);
-            
-            if (deleteError) {
-                console.error("Error eliminando duplicados:", deleteError);
-                toast("Error al limpiar duplicados", "bad");
-                return;
-            }
-            
-            console.log(`Limpieza completada: ${duplicatesToDelete.length} registros duplicados eliminados`);
-            toast(`Limpieza completada: ${duplicatesToDelete.length} duplicados eliminados`, "ok");
-            
-            // Limpiar cache y refrescar UI
-            if (window.taskAssigneesCache) {
-                window.taskAssigneesCache.clear();
-            }
-            refreshAll();
-        } else {
-            console.log("No se encontraron duplicados para limpiar");
-            toast("No se encontraron duplicados para limpiar", "info");
-        }
-        
-    } catch (err) {
-        console.error("Error en limpieza de duplicados:", err);
-        toast("Error durante la limpieza", "bad");
-    }
-}
+
+
 
 // Función para eliminar tareas (solo para administradores y jefes de terminal)
 async function deleteTask(taskId, taskTitle) {
@@ -6447,7 +6196,27 @@ async function deleteMeeting(meetingId, meetingTitle) {
         toast("Error al eliminar la reunión", "bad");
     }
 }
+
+// Función para destruir todos los gráficos de manera segura
+function destroyAllCharts() {
+    try {
+        if (charts.c1 && typeof charts.c1.destroy === 'function') {
+            charts.c1.destroy();
+            charts.c1 = null;
+        }
+        if (charts.c2 && typeof charts.c2.destroy === 'function') {
+            charts.c2.destroy();
+            charts.c2 = null;
+        }
+        // Limpiar la variable charts
+        charts = {};
+    } catch (e) {
+        console.log("Error destruyendo gráficos:", e);
+        charts = {};
+    }
+}
 </script>
 
 </body>
+</html>
 </html>
