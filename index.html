@@ -2980,6 +2980,618 @@ document.addEventListener('DOMContentLoaded', () => {
 window.switchView = switchView;
 window.toggleSidebar = toggleSidebar;
         
+        // Delete meeting function
+        async function deleteMeeting(meetingId, meetingTitle) {
+            try {
+                // Verificar permisos
+                if (!canManage()) {
+                    toast("No tienes permisos para eliminar reuniones", "bad");
+                    return;
+                }
+
+                // Confirmar eliminación
+                const confirmed = confirm(`¿Estás seguro de que quieres eliminar la reunión "${meetingTitle}"?\n\nEsta acción no se puede deshacer y eliminará:\n• La reunión completa\n• Todos los asistentes registrados`);
+                
+                if (!confirmed) return;
+
+                // Mostrar loading
+                toast("Eliminando reunión...", "info");
+
+                // 1. Eliminar asistentes de la reunión
+                const { error: attendeesError } = await supabase
+                    .from("meeting_attendees")
+                    .delete()
+                    .eq("meeting_id", meetingId);
+                
+                if (attendeesError) {
+                    console.error("Error eliminando asistentes:", attendeesError);
+                }
+
+                // 2. Eliminar la reunión principal
+                const { error: meetingError } = await supabase
+                    .from("meetings")
+                    .delete()
+                    .eq("id", meetingId);
+                
+                if (meetingError) {
+                    console.error("Error eliminando reunión:", meetingError);
+                    toast("Error al eliminar la reunión", "bad");
+                    return;
+                }
+
+                // Mostrar éxito
+                toast(`Reunión "${meetingTitle}" eliminada exitosamente`, "ok");
+                sound();
+
+                // Refrescar la interfaz
+                renderMeetings();
+                renderCalendar();
+                loadKPIs();
+
+            } catch (err) {
+                console.error("Error eliminando reunión:", err);
+                toast("Error al eliminar la reunión", "bad");
+            }
+        }
+        
+        // Delete task function
+        async function deleteTask(taskId, taskTitle) {
+            try {
+                // Verificar permisos
+                if (!canManage()) {
+                    toast("No tienes permisos para eliminar tareas", "bad");
+                    return;
+                }
+
+                // Confirmar eliminación
+                const confirmed = confirm(`¿Estás seguro de que quieres eliminar la tarea "${taskTitle}"?\n\nEsta acción no se puede deshacer y eliminará:\n• La tarea completa\n• Todas las asignaciones\n• Todos los comentarios\n• Todos los archivos asociados`);
+                
+                if (!confirmed) return;
+
+                // Mostrar loading
+                toast("Eliminando tarea...", "info");
+
+                // 1. Eliminar comentarios de la tarea
+                const { error: commentsError } = await supabase
+                    .from("task_comments")
+                    .delete()
+                    .eq("task_id", taskId);
+                
+                if (commentsError) {
+                    console.error("Error eliminando comentarios:", commentsError);
+                }
+
+                // 2. Eliminar archivos de la tarea
+                const { error: filesError } = await supabase
+                    .from("Group_Red_Task_Files")
+                    .delete()
+                    .eq("task_id", taskId);
+                
+                if (filesError) {
+                    console.error("Error eliminando archivos:", filesError);
+                }
+
+                // 3. Eliminar asignaciones de la tarea
+                const { error: assigneesError } = await supabase
+                    .from("task_assignees")
+                    .delete()
+                    .eq("task_id", taskId);
+                
+                if (assigneesError) {
+                    console.error("Error eliminando asignaciones:", assigneesError);
+                }
+
+                // 4. Eliminar la tarea principal
+                const { error: taskError } = await supabase
+                    .from("tasks")
+                    .delete()
+                    .eq("id", taskId);
+                
+                if (taskError) {
+                    console.error("Error eliminando tarea:", taskError);
+                    toast("Error al eliminar la tarea", "bad");
+                    return;
+                }
+
+                // Limpiar cache local
+                if (window.taskAssigneesCache) {
+                    window.taskAssigneesCache.delete(taskId);
+                }
+
+                // Mostrar éxito
+                toast(`Tarea "${taskTitle}" eliminada exitosamente`, "ok");
+                sound();
+
+                // Refrescar la interfaz
+                renderTaskList("#list-dashboard");
+                renderTaskList("#list-tasks");
+                renderLevantamientos();
+                renderCalendar();
+                loadKPIs();
+
+            } catch (err) {
+                console.error("Error eliminando tarea:", err);
+                toast("Error al eliminar la tarea", "bad");
+            }
+        }
+        
+        // Update task status function
+        async function updateTaskStatus(taskId, newStatus) {
+            try {
+                // Verificar que el usuario esté autenticado
+                if (!me || !me.id) {
+                    toast("Usuario no autenticado", "bad");
+                    return;
+                }
+                
+                console.log("Actualizando tarea:", taskId, "a estado:", newStatus, "para usuario:", me.id);
+                
+                // Verificar permisos
+                const { data: task, error } = await supabase.from("tasks")
+                    .select("id, title, status, leader_id, created_by")
+                    .eq("id", taskId)
+                    .single();
+                
+                if (error || !task) {
+                    console.error("Error fetching task:", error);
+                    toast("Tarea no encontrada", "bad");
+                    return;
+                }
+                
+                console.log("Tarea encontrada:", task);
+                
+                // Verificar si el usuario está asignado a esta tarea
+                const { data: assignees } = await supabase.from("task_assignees")
+                    .select("user_id")
+                    .eq("task_id", taskId);
+                
+                const isAssigned = assignees?.some(a => a.user_id === me.id) || 
+                                  task.leader_id === me.id || 
+                                  task.created_by === me.id || 
+                                  canManage();
+                
+                console.log("Puede cambiar estado:", isAssigned);
+                
+                if (!isAssigned) {
+                    toast("No tiene permisos para cambiar el estado de esta tarea", "bad");
+                    return;
+                }
+                
+                // Actualizar estado
+                const { error: updateError } = await supabase.from("tasks").update({
+                    status: newStatus,
+                    updated_at: new Date().toISOString()
+                }).eq("id", taskId);
+                
+                if (updateError) {
+                    console.error("Error updating task:", updateError);
+                    toast("Error al actualizar el estado de la tarea", "bad");
+                    return;
+                }
+                
+                console.log("Tarea actualizada exitosamente");
+                
+                // Agregar comentario del sistema
+                const { error: commentError } = await supabase.from("task_comments").insert([{
+                    task_id: taskId,
+                    user_id: me.id,
+                    content: "::status::" + newStatus
+                }]);
+                
+                if (commentError) {
+                    console.error("Error adding comment:", commentError);
+                    // No fallar si no se puede agregar el comentario
+                }
+                
+                // Mostrar notificación
+                const statusLabels = {
+                    'pendiente': 'Pendiente',
+                    'en_curso': 'En Curso',
+                    'terminada': 'Terminada'
+                };
+                
+                toast(`Tarea "${task.title}" actualizada a ${statusLabels[newStatus]}`, "ok", me.full_name);
+                sound();
+                
+                // Actualizar UI
+                refreshAll();
+                
+            } catch (err) {
+                console.error("Error updating task status:", err);
+                toast("Error al actualizar estado de la tarea", "bad");
+            }
+        }
+        
+        // Open edit meeting function
+        async function openEditMeeting(id) {
+            if (!canManage()) { toast("Sin permiso", "warn"); return; }
+            editMeetingId = id;
+            
+            try {
+                const { data: meeting } = await supabase.from("meetings")
+                    .select("*")
+                    .eq("id", id)
+                    .single();
+                
+                if (!meeting) {
+                    toast("Reunión no encontrada", "bad");
+                    return;
+                }
+                
+                // Set form values
+                qs("#em-title").value = meeting.title;
+                
+                const startDate = new Date(meeting.start_at);
+                qs("#em-date").value = startDate.toISOString().slice(0, 10);
+                qs("#em-start").value = startDate.toLocaleTimeString("es-ES", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                });
+                
+                const endDate = new Date(meeting.end_at);
+                qs("#em-end").value = endDate.toLocaleTimeString("es-ES", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                });
+                
+                qs("#em-agenda").value = meeting.agenda || "";
+                
+                // Show modal
+                openModal("modal-edit-meeting");
+                
+            } catch (err) {
+                console.error("Error opening edit meeting:", err);
+                toast("Error al abrir reunión", "bad");
+            }
+        }
+        
+        // Open task function
+        async function openTask(id) {
+            currentTask = id;
+            
+            try {
+                const { data: task } = await supabase.from("tasks")
+                    .select("*")
+                    .eq("id", id)
+                    .single();
+                
+                if (!task) {
+                    toast("Tarea no encontrada", "bad");
+                    return;
+                }
+                
+                // Set task title
+                qs("#md-title").textContent = task.title;
+                
+                // Render task info
+                const infoContainer = qs("#md-info");
+                infoContainer.innerHTML = "";
+                
+                const statusColors = {
+                    'pendiente': 'badge-pending',
+                    'en_curso': 'badge-progress',
+                    'terminada': 'badge-completed'
+                };
+                
+                const approvalColors = {
+                    'ninguna': '',
+                    'aprobada': 'badge-completed',
+                    'posponer': 'badge-pending',
+                    'extender': 'badge-progress'
+                };
+                
+                const fields = [
+                    ["Descripción", task.description || "—"],
+                    ["Tipo", `<span class="task-item-badge">${task.type}</span>`],
+                    ["Estado", `<span class="task-item-badge ${statusColors[task.status] || ''}">${task.status.replace('_', ' ')}</span>`],
+                    ["Aprobación", `<span class="task-item-badge ${approvalColors[task.approval_status] || ''}">${task.approval_status}</span>`],
+                    ["Líder", task.leader_id ? nameOf(task.leader_id) : "—"],
+                    ["Fecha límite", task.due_date ? formatDate(task.due_date) : "—"],
+                    ["Creado", formatDate(task.created_at)],
+                    ["Creado por", nameOf(task.created_by)]
+                ];
+                
+                if (task.attachment_url) {
+                    fields.push(["Adjunto", `<a href="${task.attachment_url}" target="_blank" class="task-item-badge"><i class="fas fa-file-download"></i> Ver adjunto</a>`]);
+                }
+                
+                if (task.link_url) {
+                    fields.push(["Enlace", `<a href="${task.link_url}" target="_blank" class="task-item-badge"><i class="fas fa-external-link-alt"></i> ${task.link_url}</a>`]);
+                }
+                
+                // Get assignees
+                const { data: assignees } = await supabase.from("task_assignees")
+                    .select("user_id")
+                    .eq("task_id", id);
+                
+                if (assignees && assignees.length > 0) {
+                    const assigneeNames = assignees.map(a => nameOf(a.user_id)).join(", ");
+                    fields.push(["Asignados", assigneeNames]);
+                }
+                
+                fields.forEach(([key, value]) => {
+                    const el = document.createElement("div");
+                    el.className = "task-item";
+                    el.innerHTML = `
+                        <div style="font-weight: 500; color: var(--text-light);">${key}</div>
+                        <div>${value}</div>
+                    `;
+                    infoContainer.appendChild(el);
+                });
+                
+                // Set up action buttons
+                const actionsContainer = qs("#md-actions");
+                actionsContainer.innerHTML = "";
+                
+                // Only show status change buttons if user has permission
+                const canChangeStatus = task.assigned_to === me.id || 
+                                       task.created_by === me.id || 
+                                       task.leader_id === me.id || 
+                                       canManage();
+                
+                if (canChangeStatus) {
+                    const statusButtons = [
+                        { status: "pendiente", label: "Pendiente", icon: "clock", class: "secondary" },
+                        { status: "en_curso", label: "En Curso", icon: "spinner", class: "primary" },
+                        { status: "terminada", label: "Terminada", icon: "check", class: "success" }
+                    ];
+                    
+                    statusButtons.forEach(btn => {
+                        if (btn.status !== task.status) {
+                            const button = document.createElement("button");
+                            button.className = `btn btn-${btn.class}`;
+                            button.onclick = () => updateStatus(id, btn.status);
+                            button.innerHTML = `<i class="fas fa-${btn.icon}"></i> <span>${btn.label}</span>`;
+                            actionsContainer.appendChild(button);
+                        }
+                    });
+                }
+                
+                // Show approval buttons for managers
+                if (canManage()) {
+                    const approvalButtons = [
+                        { approval: "ninguna", label: "Sin Aprobación", icon: "ban", class: "secondary" },
+                        { approval: "aprobada", label: "Aprobar", icon: "check-circle", class: "success" },
+                        { approval: "posponer", label: "Posponer", icon: "clock", class: "warning" },
+                        { approval: "extender", label: "Extender", icon: "expand", class: "info" }
+                    ];
+                    
+                    approvalButtons.forEach(btn => {
+                        if (btn.approval !== task.approval_status) {
+                            const button = document.createElement("button");
+                            button.className = `btn btn-${btn.class}`;
+                            button.onclick = () => updateApproval(id, btn.approval);
+                            button.innerHTML = `<i class="fas fa-${btn.icon}"></i> <span>${btn.label}</span>`;
+                            actionsContainer.appendChild(button);
+                        }
+                    });
+                }
+                
+                // Render comments
+                await renderComments(id);
+                
+                // Show the modal
+                openModal("task-modal");
+                
+            } catch (err) {
+                console.error("Error opening task:", err);
+                toast("Error al abrir tarea", "bad");
+            }
+        }
+        
+        // Add user function
+        async function addUser() {
+            if (!canCreateUsers()) {
+                toast("Sin permisos para crear usuarios", "bad");
+                return;
+            }
+            
+            const full_name = qs("#u-name").value.trim();
+            const username = qs("#u-user").value.trim();
+            const password = qs("#u-pass").value.trim();
+            const role = qs("#u-role").value;
+            
+            if (!full_name || !username || !password) {
+                toast("Todos los campos son obligatorios", "warn");
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.from("app_users").insert([{
+                    full_name,
+                    username,
+                    password,
+                    role,
+                    is_active: true
+                }]);
+                
+                if (error) {
+                    console.error("Error creating user:", error);
+                    toast("Error al crear usuario: " + (error.message || "Error desconocido"), "bad");
+                    return;
+                }
+                
+                // Clear form
+                ["#u-name", "#u-user", "#u-pass"].forEach(s => qs(s).value = "");
+                qs("#u-role").value = "inspector";
+                
+                toast("Usuario creado exitosamente", "ok", me.full_name);
+                loadUsers();
+                
+            } catch (err) {
+                console.error("Error in addUser:", err);
+                toast("Error al crear usuario", "bad");
+            }
+        }
+        
+        // Create meeting function
+        async function createMeeting() {
+            if (!canManage()) {
+                toast("Sin permisos para crear reuniones", "bad");
+                return;
+            }
+            
+            const title = qs("#nm-title").value.trim();
+            const date = qs("#nm-date").value;
+            const start = qs("#nm-start").value;
+            const end = qs("#nm-end").value;
+            const agenda = qs("#nm-agenda").value.trim() || null;
+            
+            if (!title || !date || !start || !end) {
+                toast("Título, fecha y horas son obligatorios", "warn");
+                return;
+            }
+            
+            try {
+                const startISO = combineISO(date, start);
+                const endISO = combineISO(date, end);
+                
+                // Get selected attendees
+                const attendees = Array.from(qs("#nm-attendees").querySelectorAll("input:checked")).map(i => i.value);
+                
+                // Create the meeting
+                const { data, error } = await supabase.from("meetings").insert([{
+                    title,
+                    start_at: startISO,
+                    end_at: endISO,
+                    agenda,
+                    created_by: me.id
+                }]).select("id").single();
+                
+                if (error) {
+                    console.error("Error creating meeting:", error);
+                    toast("Error al crear reunión", "bad");
+                    return;
+                }
+                
+                // Create attendees records if there are any
+                if (attendees.length) {
+                    await supabase.from("meeting_attendees").insert(
+                        attendees.map(userId => ({
+                            meeting_id: data.id,
+                            user_id: userId
+                        }))
+                    );
+                }
+                
+                closeModal("modal-new-meeting");
+                clearNewMeeting();
+                toast("Reunión creada exitosamente", "ok", me.full_name);
+                sound();
+                renderMeetings();
+                loadKPIs();
+                renderCalendar();
+                
+            } catch (err) {
+                console.error("Error in createMeeting:", err);
+                toast("Error al crear reunión", "bad");
+            }
+        }
+        
+        // Create task function
+        async function createTask() {
+            if (!canManage()) {
+                toast("Sin permisos para crear tareas", "bad");
+                return;
+            }
+            
+            const title = qs("#nt-title").value.trim();
+            const desc = qs("#nt-desc").value.trim();
+            const type = qs("#nt-type").value;
+            const vis = qs("#nt-vis").value;
+            // Get selected leaders
+            const selectedLeaders = Array.from(qs("#nt-leaders").querySelectorAll("input:checked")).map(i => i.value);
+            const link = qs("#nt-link").value.trim() || null;
+            const due = combineISO(qs("#nt-date").value, qs("#nt-time").value);
+            
+            if (!title) {
+                toast("El título es obligatorio", "warn");
+                return;
+            }
+            
+            if (type === "levantamiento" && selectedLeaders.length === 0) {
+                toast("Al menos un líder es obligatorio para levantamientos", "warn");
+                return;
+            }
+            
+            try {
+                // Get selected inspectors
+                const assignees = Array.from(qs("#nt-inspectors").querySelectorAll("input:checked")).map(i => i.value);
+                
+                // Upload file if provided
+                const file = qs("#nt-file").files[0];
+                const fileUrl = await uploadFile(file, me.id);
+                
+                // Create the task with the first leader as primary leader
+                const primaryLeader = selectedLeaders.length > 0 ? selectedLeaders[0] : null;
+                const { data, error } = await supabase.from("tasks").insert([{
+                    title,
+                    description: desc,
+                    type,
+                    visibility: vis,
+                    leader_id: primaryLeader,
+                    created_by: me.id,
+                    due_date: due,
+                    attachment_url: fileUrl,
+                    link_url: link,
+                    status: "pendiente",
+                    approval_status: "ninguna"
+                }]).select("id").single();
+                
+                if (error) {
+                    console.error("Error creating task:", error);
+                    toast("Error al crear tarea", "bad");
+                    return;
+                }
+                
+                // Create assignees records if there are any
+                if (assignees.length) {
+                    await supabase.from("task_assignees").insert(
+                        assignees.map(userId => ({
+                            task_id: data.id,
+                            user_id: userId
+                        }))
+                    );
+                }
+                
+                closeModal("modal-new-task");
+                clearNewTask();
+                toast("Tarea creada exitosamente", "ok", me.full_name);
+                sound();
+                refreshAll();
+                
+            } catch (err) {
+                console.error("Error in createTask:", err);
+                toast("Error al crear tarea", "bad");
+            }
+        }
+        
+        // File upload function
+        async function uploadFile(file, prefix) {
+            if (!file) return null;
+            
+            try {
+                const path = `${prefix}/${Date.now()}_${file.name}`;
+                const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
+                
+                if (error) {
+                    console.error("Upload error:", error);
+                    toast("Error al subir archivo", "bad");
+                    return null;
+                }
+                
+                const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+                return data.publicUrl;
+                
+            } catch (err) {
+                console.error("Error in uploadFile:", err);
+                toast("Error al subir archivo", "bad");
+                return null;
+            }
+        }
+        
         // Combine date and time into ISO format
         function combineISO(d, t) {
             if (!d || !t) return null;
@@ -4939,23 +5551,45 @@ function updateNotificationsBadge(overdueCount = null) {
 // Chart Functions
 async function renderReports() {
     try {
-        // Verificar si hay gráficos activos
-        if (hasActiveCharts()) {
-            console.log("Gráficos activos detectados, forzando limpieza...");
-            // Forzar destrucción de todos los gráficos
+        console.log("=== INICIANDO RENDERIZADO DE REPORTES ===");
+        
+        // 1. Verificar estado actual de Chart.js
+        const initialStatus = checkChartJSStatus();
+        console.log("Estado inicial:", initialStatus);
+        
+        // 2. Si hay gráficos activos, destrucción agresiva
+        if (initialStatus.instanceCount > 0 || initialStatus.hasLocalCharts) {
+            console.log("Gráficos activos detectados, iniciando destrucción agresiva...");
+            
+            // Primera limpieza
             destroyAllCharts();
             clearAllChartCanvases();
             
-            // Esperar un momento para asegurar que se destruyan
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Esperar y verificar
+            await new Promise(resolve => setTimeout(resolve, 150));
             
-            // Si aún hay problemas, reiniciar completamente Chart.js
-            if (hasActiveCharts()) {
-                console.log("Problemas persistentes, reiniciando Chart.js...");
+            // Segunda verificación
+            const secondStatus = checkChartJSStatus();
+            if (secondStatus.instanceCount > 0) {
+                console.log("Aún hay instancias activas, reiniciando Chart.js...");
                 resetChartJS();
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
+            
+            // Verificación final
+            const finalStatus = checkChartJSStatus();
+            console.log("Estado después de limpieza:", finalStatus);
         }
+        
+        // 3. Verificar que los canvas estén disponibles
+        const chart1Canvas = qs("#chart1");
+        const chart2Canvas = qs("#chart2");
+        
+        if (!chart1Canvas || !chart2Canvas) {
+            throw new Error("Canvas de gráficos no encontrados");
+        }
+        
+        console.log("Canvas verificados, procediendo con la creación de gráficos...");
         
         const { data: tasks } = await supabase.from("tasks")
             .select("id, status, created_at, due_date")
@@ -5898,14 +6532,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // Save meeting button
     qs('#btn-save-nm').addEventListener('click', createMeeting);
     
-    // Edit meeting buttons
+    // Save edit meeting button
     qs('#btn-save-em').addEventListener('click', saveEditMeeting);
+    
+    // Pospone meeting button
     qs('#btn-pospone-em').addEventListener('click', posponeEditMeeting);
     
     // Add user button
     qs('#btn-add-user').addEventListener('click', addUser);
     
-    // Comment input for mentions
+    // Send comment button
+    qs('#btn-send-comment').addEventListener('click', sendComment);
+    
+    // Comment input for mentions and Enter key
     qs('#c-text').addEventListener('input', mentionSuggest);
     qs('#c-text').addEventListener('keydown', e => {
         // Submit on Enter (unless Shift is pressed)
@@ -5915,32 +6554,59 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-    // Send comment button
-    qs('#btn-send-comment').addEventListener('click', sendComment);
-    
     // File input change event
-    qs('#c-file').addEventListener('change', e => {
-        const fileName = e.target.files[0]?.name;
-        qs('#file-name').textContent = fileName ? `Archivo seleccionado: ${fileName}` : '';
+    qs('#c-file').addEventListener('change', (e) => {
+        const fileName = e.target.files[0]?.name || '';
+        qs('#file-name').textContent = fileName;
     });
+    
+    // Filter change events
+    qs('#flt-status').addEventListener('change', () => {
+        renderTaskList("#list-dashboard");
+    });
+    
+    qs('#flt-mias').addEventListener('change', () => {
+        renderTaskList("#list-dashboard");
+    });
+    
+    qs('#flt-tasks').addEventListener('change', () => {
+        renderTaskList("#list-tasks");
+    });
+    
+    qs('#flt-vis').addEventListener('change', () => {
+        renderTaskList("#list-tasks");
+    });
+    
+    // Calendar scope change
+    qs('#cal-scope').addEventListener('change', () => {
+        renderCalendar();
+    });
+    
+            // Performance window change
+        qs('#perf-window').addEventListener('change', () => {
+            renderPerformance();
+        });
     
     // Modal close buttons
     qsa('[data-close]').forEach(btn => {
         btn.addEventListener('click', () => {
-            closeModal(btn.getAttribute('data-close'));
+            const modalId = btn.dataset.close;
+            closeModal(modalId);
         });
     });
     
-    qs('#md-close').addEventListener('click', () => closeModal('task-modal'));
-    
-    // Outside modal click to close
+    // Close modals when clicking overlay
     qsa('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', e => {
+        modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                closeModal(modal.id);
+                const modalId = modal.id;
+                closeModal(modalId);
             }
         });
     });
+    
+    // Close task modal
+    qs('#md-close').addEventListener('click', () => closeModal('task-modal'));
     
     // Escape key to close modals
     document.addEventListener('keydown', e => {
@@ -5951,14 +6617,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-    // Logout button
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('#btn-logout')) {
-            console.log("Botón logout clickeado");
-            leave();
-        }
-    });
-    
     // Dropdown hide/show mentions
     document.addEventListener('click', e => {
         if (!e.target.closest('#mention-box') && !e.target.closest('#c-text')) {
@@ -5966,18 +6624,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
-    // Filter change events
-    qs('#flt-status').addEventListener('change', () => renderTaskList('#list-dashboard'));
-    qs('#flt-mias').addEventListener('change', () => renderTaskList('#list-dashboard'));
-    qs('#flt-tasks').addEventListener('change', () => renderTaskList('#list-tasks'));
-    qs('#flt-vis').addEventListener('change', () => renderTaskList('#list-tasks'));
-    qs('#cal-scope').addEventListener('change', renderCalendar);
-    qs('#perf-window').addEventListener('change', renderPerformance);
-    
     // User dropdown toggle
     qs('#user-dropdown-toggle').addEventListener('click', () => {
         toast('Función de perfil en desarrollo', 'info');
     });
+    
+    // Logout button
+    qs('#btn-logout').addEventListener('click', leave);
     
     // Notifications button
     qs('#btn-notifications').addEventListener('click', () => {
@@ -6031,6 +6684,1244 @@ document.addEventListener("DOMContentLoaded", () => {
         window.updateTaskStatus = updateTaskStatus;
         window.deleteTask = deleteTask;
         window.deleteMeeting = deleteMeeting;
+        
+        // Mention suggestion function
+        function mentionSuggest(e) {
+            const text = e.target.value;
+            const atIndex = text.lastIndexOf('@');
+            
+            if (atIndex === -1) {
+                qs('#mention-box').classList.remove('active');
+                return;
+            }
+            
+            const username = text.substring(atIndex + 1);
+            if (username.length < 2) {
+                qs('#mention-box').classList.remove('active');
+                return;
+            }
+            
+            const matches = users.filter(u => 
+                u.full_name.toLowerCase().includes(username.toLowerCase())
+            );
+            
+            if (matches.length === 0) {
+                qs('#mention-box').classList.remove('active');
+                return;
+            }
+            
+            const mentionBox = qs('#mention-box');
+            mentionBox.innerHTML = matches.map(u => `
+                <div class="mention-item" onclick="insertMention('${u.full_name}')">
+                    <div class="mention-avatar">${initials(u.full_name)}</div>
+                    <div class="mention-name">${u.full_name}</div>
+                </div>
+            `).join('');
+            
+            mentionBox.classList.add('active');
+        }
+        
+        // Insert mention function
+        function insertMention(fullName) {
+            const input = qs('#c-text');
+            const text = input.value;
+            const atIndex = text.lastIndexOf('@');
+            const newText = text.substring(0, atIndex) + '@' + fullName + ' ' + text.substring(atIndex + text.substring(atIndex).indexOf(' ') + 1);
+            
+            input.value = newText;
+            qs('#mention-box').classList.remove('active');
+            input.focus();
+        }
+        
+        // Levantamientos rendering function
+        async function renderLevantamientos() {
+            try {
+                // Verificar que el usuario esté autenticado
+                if (!me || !me.id) {
+                    console.log("Usuario no autenticado, saltando renderizado de levantamientos");
+                    return;
+                }
+                
+                const tasks = (await fetchTasks("")).filter(t => 
+                    t && t.type === "levantamiento" && visibleToMe(t)
+                );
+                
+                // Cargar asignados de los levantamientos
+                await loadTaskAssignees(tasks);
+                
+                // Render levantamiento list
+                const listContainer = qs("#lev-list");
+                listContainer.innerHTML = "";
+                
+                if (tasks.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="task-item">
+                            <div class="task-item-content">
+                                <div class="task-item-title">No hay levantamientos disponibles</div>
+                                <div class="task-item-meta">
+                                    <span class="task-item-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>${canManage() ? 'Puede crear un nuevo levantamiento con el botón "Crear Levantamiento"' : 'No hay levantamientos asignados'}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    tasks.forEach(task => {
+                        const el = document.createElement("div");
+                        el.className = "task-item";
+                        
+                        let statusClass = "";
+                        if (task.status === "pendiente") statusClass = "badge-pending";
+                        else if (task.status === "en_curso") statusClass = "badge-progress";
+                        else if (task.status === "terminada") statusClass = "badge-completed";
+                        
+                        // Verificar si el usuario actual puede cambiar el estado del levantamiento
+                        const canChangeStatus = isAssignedToMe(task.id) || 
+                                               task.leader_id === me.id || 
+                                               task.created_by === me.id || 
+                                               canManage();
+                        
+                        el.innerHTML = `
+                            <div class="task-item-content">
+                                <div class="task-item-title">${task.title}</div>
+                                <div class="task-item-meta">
+                                    <span class="task-item-badge">
+                                        <i class="fas fa-user"></i>
+                                        <span>Líder: ${task.leader_id ? nameOf(task.leader_id) : "—"}</span>
+                                    </span>
+                                    <span class="task-item-badge ${statusClass}">
+                                        <i class="fas fa-${
+                                            task.status === 'pendiente' ? 'clock' : 
+                                            task.status === 'en_curso' ? 'spinner' : 'check-circle'
+                                        }"></i>
+                                        <span>${task.status.replace('_', ' ')}</span>
+                                    </span>
+                                    ${task.description ? `
+                                        <span class="task-item-badge">
+                                            <i class="fas fa-align-left"></i>
+                                            <span>${task.description.substring(0, 30)}${task.description.length > 30 ? '...' : ''}</span>
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="task-item-actions">
+                                ${task.link_url ? `
+                                    <a href="${task.link_url}" target="_blank" class="btn btn-sm btn-secondary">
+                                        <i class="fas fa-external-link-alt"></i>
+                                        <span>Enlace</span>
+                                    </a>
+                                ` : ''}
+                                <button class="btn btn-sm btn-primary" onclick="openTask('${task.id}')">
+                                    <i class="fas fa-folder-open"></i>
+                                    <span>Abrir</span>
+                                </button>
+                                ${canChangeStatus && task.status !== 'terminada' ? `
+                                    ${task.status === 'pendiente' ? `
+                                        <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${task.id}', 'en_curso')">
+                                            <i class="fas fa-play"></i>
+                                            <span>Iniciar</span>
+                                        </button>
+                                    ` : ''}
+                                    ${task.status === 'en_curso' ? `
+                                        <button class="btn btn-sm btn-success" onclick="updateTaskStatus('${task.id}', 'terminada')">
+                                            <i class="fas fa-check"></i>
+                                            <span>Completar</span>
+                                        </button>
+                                        <button class="btn btn-sm btn-warning" onclick="updateTaskStatus('${task.id}', 'pendiente')">
+                                            <i class="fas fa-pause"></i>
+                                            <span>Pausar</span>
+                                        </button>
+                                    ` : ''}
+                                ` : ''}
+                                ${canManage() ? `
+                                    <button class="btn btn-sm btn-danger btn-task-delete" onclick="deleteTask('${task.id}', '${task.title}')" title="Eliminar levantamiento">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Eliminar</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                        listContainer.appendChild(el);
+                    });
+                }
+                
+                // Render quick access links
+                const linksContainer = qs("#lev-links");
+                if (linksContainer) {
+                    linksContainer.innerHTML = `
+                        <div class="card stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-title">Total Levantamientos</div>
+                                <div class="stat-card-value">${tasks.length}</div>
+                                <div class="stat-card-badge">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>En el sistema</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-title">Pendientes</div>
+                                <div class="stat-card-value">${tasks.filter(t => t.status === 'pendiente').length}</div>
+                                <div class="stat-card-badge badge-pending">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Por iniciar</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-spinner"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-title">En Curso</div>
+                                <div class="stat-card-value">${tasks.filter(t => t.status === 'en_curso').length}</div>
+                                <div class="stat-card-badge badge-progress">
+                                    <i class="fas fa-spinner"></i>
+                                    <span>Activos</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-title">Completados</div>
+                                <div class="stat-card-value">${tasks.filter(t => t.status === 'terminada').length}</div>
+                                <div class="stat-card-badge badge-completed">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Finalizados</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Aplicar permisos después de renderizar
+                applyRoleUI();
+                
+            } catch (err) {
+                console.error("Error rendering levantamientos:", err);
+                toast("Error al cargar levantamientos", "bad");
+            }
+        }
+        
+        // Meetings rendering function
+        async function renderMeetings() {
+            try {
+                // Verificar que el usuario esté autenticado
+                if (!me || !me.id) {
+                    console.log("Usuario no autenticado, saltando renderizado de reuniones");
+                    return;
+                }
+                
+                const now = new Date().toISOString();
+                
+                const { data: meetings, error } = await supabase.from("meetings")
+                    .select("id, title, start_at, end_at, agenda, created_by")
+                    .gte("end_at", now)
+                    .order("start_at");
+                    
+                if (error) {
+                    console.error("Error fetching meetings:", error);
+                    return;
+                }
+                
+                const meetingsContainer = qs("#list-meetings");
+                const dashboardMeetingsContainer = qs("#list-next-meet");
+                
+                meetingsContainer.innerHTML = "";
+                dashboardMeetingsContainer.innerHTML = "";
+                
+                if (!meetings || meetings.length === 0) {
+                    const emptyMessage = `
+                        <div class="task-item">
+                            <div class="task-item-content">
+                                <div class="task-item-title">No hay reuniones programadas</div>
+                                <div class="task-item-meta">
+                                    <span class="task-item-badge">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Puede crear una nueva reunión con el botón "Nueva Reunión"</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    meetingsContainer.innerHTML = emptyMessage;
+                    dashboardMeetingsContainer.innerHTML = emptyMessage;
+                    return;
+                }
+                
+                meetings.forEach(meeting => {
+                    const startDate = new Date(meeting.start_at);
+                    const endDate = new Date(meeting.end_at);
+                    
+                    // Format dates
+                    const formattedDate = startDate.toLocaleDateString("es-ES");
+                    const formattedStartTime = startDate.toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    });
+                    const formattedEndTime = endDate.toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    });
+                    
+                    // Create meeting item for meetings view
+                    const meetingItem = document.createElement("div");
+                    meetingItem.className = "meeting-item";
+                    meetingItem.innerHTML = `
+                        <div class="meeting-item-content">
+                            <div class="meeting-item-title">${meeting.title}</div>
+                            <div class="meeting-item-meta">
+                                <span class="meeting-item-badge">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>${formattedDate}</span>
+                                </span>
+                                <span class="meeting-item-badge">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${formattedStartTime} - ${formattedEndTime}</span>
+                                </span>
+                                <span class="meeting-item-badge">
+                                    <i class="fas fa-user"></i>
+                                    <span>Creador: ${nameOf(meeting.created_by)}</span>
+                                </span>
+                            </div>
+                            ${meeting.agenda ? `
+                                <div style="margin-top: 8px; font-size: var(--font-size-sm); color: var(--text-light);">
+                                    <i class="fas fa-clipboard-list"></i> ${meeting.agenda}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="meeting-item-actions">
+                            ${canManage() ? `
+                            <button class="btn btn-sm btn-primary btn-edit-meeting" onclick="openEditMeeting('${meeting.id}')">
+                                <i class="fas fa-edit"></i>
+                                <span>Editar</span>
+                            </button>
+                            <button class="btn btn-sm btn-danger btn-delete-meeting" onclick="deleteMeeting('${meeting.id}', '${meeting.title}')" title="Eliminar reunión">
+                                <i class="fas fa-trash"></i>
+                                <span>Eliminar</span>
+                            </button>` : ``}
+                        </div>
+                    `;
+                    
+                    // Create simplified version for dashboard
+                    const dashboardItem = document.createElement("div");
+                    dashboardItem.className = "meeting-item";
+                    dashboardItem.innerHTML = `
+                        <div class="meeting-item-content">
+                            <div class="meeting-item-title">${meeting.title}</div>
+                            <div class="meeting-item-meta">
+                                <span class="meeting-item-badge">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>${formattedDate}</span>
+                                </span>
+                                <span class="meeting-item-badge">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${formattedStartTime} - ${formattedEndTime}</span>
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    meetingsContainer.appendChild(meetingItem);
+                    dashboardMeetingsContainer.appendChild(dashboardItem);
+                });
+                
+            } catch (err) {
+                console.error("Error rendering meetings:", err);
+                toast("Error al cargar reuniones", "bad");
+            }
+        }
+        
+        // Calendar rendering function
+        async function renderCalendar() {
+            try {
+                // Verificar que el usuario esté autenticado
+                if (!me || !me.id) {
+                    console.log("Usuario no autenticado, saltando renderizado del calendario");
+                    return;
+                }
+                
+                const scopeEl = qs("#cal-scope");
+                if (!scopeEl) {
+                    console.log("Elemento cal-scope no encontrado, saltando renderizado del calendario");
+                    return;
+                }
+                
+                const scope = scopeEl.value;
+                
+                // Get tasks
+                const tasks = await fetchTasks("");
+                
+                // Filter tasks by scope
+                const filteredTasks = tasks.filter(t => {
+                    if (!t || !t.assigned_to) return false;
+                    
+                    return scope === "mias" ? 
+                        t.assigned_to === me.id || t.leader_id === me.id || t.created_by === me.id 
+                        : visibleToMe(t);
+                });
+                
+                // Get meetings
+                const { data: meetings } = await supabase.from("meetings")
+                    .select("id, title, start_at, end_at")
+                    .gte("end_at", "1970-01-01T00:00:00Z");
+                
+                // Prepare events array
+                const events = [];
+                
+                // Add task events
+                filteredTasks.forEach(task => {
+                    const eventDate = task.due_date ? task.due_date : task.created_at;
+                    const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== "terminada";
+                    
+                    let statusColor = '#0056a4'; // Default primary color for in-progress
+                    
+                    if (task.status === 'terminada') {
+                        statusColor = '#0c9e70'; // Success color for completed
+                    } else if (isOverdue) {
+                        statusColor = '#dc3545'; // Danger color for overdue
+                    } else if (task.status === 'pendiente') {
+                        statusColor = '#e6930f'; // Warning color for pending
+                    }
+                    
+                    // Use different colors in dark mode
+                    if (document.body.classList.contains('dark-mode')) {
+                        if (task.status === 'terminada') {
+                            statusColor = '#10b981'; // Brighter green for dark mode
+                        } else if (isOverdue) {
+                            statusColor = '#ef4444'; // Brighter red for dark mode
+                        } else if (task.status === 'pendiente') {
+                            statusColor = '#f59e0b'; // Brighter orange for dark mode
+                        } else {
+                            statusColor = '#3b82f6'; // Brighter blue for dark mode
+                        }
+                    }
+                    
+                    events.push({
+                        id: task.id,
+                        title: (task.type === "levantamiento" ? "Lev: " : "T: ") + task.title,
+                        start: eventDate,
+                        allDay: false,
+                        color: statusColor,
+                        borderColor: statusColor,
+                        textColor: '#ffffff',
+                        extendedProps: {
+                            isTask: true,
+                            type: task.type,
+                            status: task.status,
+                            isOverdue: isOverdue
+                        }
+                    });
+                });
+                
+                // Add meeting events
+                (meetings || []).forEach(meeting => {
+                    // Use different color in dark mode
+                    const meetingColor = document.body.classList.contains('dark-mode') ? 
+                                          'rgba(59, 130, 246, 0.7)' : // Brighter blue with transparency for dark mode
+                                          '#151b2d'; // Dark blue/slate for light mode
+                    
+                    events.push({
+                        id: meeting.id,
+                        title: "Reunión: " + meeting.title,
+                        start: meeting.start_at,
+                        end: meeting.end_at,
+                        color: meetingColor,
+                        borderColor: meetingColor,
+                        textColor: '#ffffff',
+                        extendedProps: {
+                            isMeeting: true
+                        }
+                    });
+                });
+                
+                // Initialize calendar if not exists
+                if (!calendar) {
+                    const calendarEl = qs("#calendar");
+                    if (calendarEl) {
+                        calendar = new FullCalendar.Calendar(calendarEl, {
+                            initialView: 'dayGridMonth',
+                            locale: 'es',
+                            headerToolbar: {
+                                left: 'prev,next today',
+                                center: 'title',
+                                right: 'dayGridMonth,timeGridWeek,listWeek'
+                            },
+                            events: events,
+                            eventClick: function(info) {
+                                if (info.event.extendedProps.isTask) {
+                                    openTask(info.event.id);
+                                } else if (info.event.extendedProps.isMeeting) {
+                                    openEditMeeting(info.event.id);
+                                }
+                            },
+                            eventDidMount: function(info) {
+                                // Add tooltips
+                                if (info.event.extendedProps.isTask) {
+                                    const status = info.event.extendedProps.status;
+                                    const type = info.event.extendedProps.type;
+                                    const isOverdue = info.event.extendedProps.isOverdue;
+                                    
+                                    let tooltip = `${type}: ${info.event.title}`;
+                                    if (isOverdue) {
+                                        tooltip += ' (ATRASADA)';
+                                    }
+                                    tooltip += `\nEstado: ${status}`;
+                                    
+                                    info.el.title = tooltip;
+                                }
+                            }
+                        });
+                        calendar.render();
+                    }
+                } else {
+                    // Update existing calendar
+                    calendar.removeAllEvents();
+                    calendar.addEventSource(events);
+                }
+                
+            } catch (err) {
+                console.error("Error rendering calendar:", err);
+            }
+        }
+        
+        // Reports rendering function
+        async function renderReports() {
+            try {
+                console.log("=== INICIANDO RENDERIZADO DE REPORTES ===");
+                
+                // 1. Verificar estado actual de Chart.js
+                const initialStatus = checkChartJSStatus();
+                console.log("Estado inicial:", initialStatus);
+                
+                // 2. Si hay gráficos activos, destrucción agresiva
+                if (initialStatus.instanceCount > 0 || initialStatus.hasLocalCharts) {
+                    console.log("Gráficos activos detectados, iniciando destrucción agresiva...");
+                    
+                    // Primera limpieza
+                    destroyAllCharts();
+                    clearAllChartCanvases();
+                    
+                    // Esperar y verificar
+                    await new Promise(resolve => setTimeout(resolve, 150));
+                    
+                    // Segunda verificación
+                    const secondStatus = checkChartJSStatus();
+                    if (secondStatus.instanceCount > 0) {
+                        console.log("Aún hay instancias activas, reiniciando Chart.js...");
+                        resetChartJS();
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
+                    // Verificación final
+                    const finalStatus = checkChartJSStatus();
+                    console.log("Estado después de limpieza:", finalStatus);
+                }
+                
+                // 3. Verificar que los canvas estén disponibles
+                const chart1Canvas = qs("#chart1");
+                const chart2Canvas = qs("#chart2");
+                
+                if (!chart1Canvas || !chart2Canvas) {
+                    throw new Error("Canvas de gráficos no encontrados");
+                }
+                
+                console.log("Canvas verificados, procediendo con la creación de gráficos...");
+                
+                const { data: tasks } = await supabase.from("tasks")
+                    .select("id, status, created_at, due_date")
+                    .order("created_at");
+                
+                // Count tasks by status
+                const statusCounts = {
+                    pendiente: 0,
+                    en_curso: 0,
+                    terminada: 0
+                };
+                
+                (tasks || []).forEach(t => statusCounts[t.status]++);
+                
+                // Create chart 1 - Distribution donut chart
+                const ctx1 = qs("#chart1");
+                
+                // Limpiar el canvas antes de crear el gráfico
+                if (ctx1) {
+                    const context = ctx1.getContext('2d');
+                    if (context) {
+                        context.clearRect(0, 0, ctx1.width, ctx1.height);
+                    }
+                }
+                
+                // Define colors based on theme
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                const chartColors = {
+                    pending: isDarkMode ? ['rgba(245, 158, 11, 0.7)', 'rgba(245, 158, 11, 1)'] : ['rgba(230, 147, 15, 0.7)', 'rgba(230, 147, 15, 1)'],
+                    progress: isDarkMode ? ['rgba(59, 130, 246, 0.7)', 'rgba(59, 130, 246, 1)'] : ['rgba(0, 86, 164, 0.7)', 'rgba(0, 86, 164, 1)'],
+                    completed: isDarkMode ? ['rgba(16, 185, 129, 0.7)', 'rgba(16, 185, 129, 1)'] : ['rgba(12, 158, 112, 0.7)', 'rgba(12, 158, 112, 1)']
+                };
+                
+                charts.c1 = new Chart(ctx1, {
+                    type: "doughnut",
+                    data: {
+                        labels: ["Pendiente", "En curso", "Terminada"],
+                        datasets: [{
+                            data: [statusCounts.pendiente, statusCounts.en_curso, statusCounts.terminada],
+                            backgroundColor: [
+                                chartColors.pending[0],
+                                chartColors.progress[0],
+                                chartColors.completed[0]
+                            ],
+                            borderColor: [
+                                chartColors.pending[1],
+                                chartColors.progress[1],
+                                chartColors.completed[1]
+                            ],
+                            borderWidth: 1,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: isDarkMode ? '#e6e9f0' : '#2c2c2c',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Create chart 2 - Weekly evolution line chart
+                const ctx2 = qs("#chart2");
+                
+                // Limpiar el canvas antes de crear el gráfico
+                if (ctx2) {
+                    const context = ctx2.getContext('2d');
+                    if (context) {
+                        context.clearRect(0, 0, ctx2.width, ctx2.height);
+                    }
+                }
+                
+                // Calculate weekly data for last 8 weeks
+                const weeklyData = [];
+                const weeklyLabels = [];
+                
+                for (let i = 7; i >= 0; i--) {
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - (i * 7));
+                    weekStart.setHours(0, 0, 0, 0);
+                    
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekEnd.getDate() + 6);
+                    weekEnd.setHours(23, 59, 59, 999);
+                    
+                    const weekTasks = tasks.filter(t => {
+                        const taskDate = new Date(t.created_at);
+                        return taskDate >= weekStart && taskDate <= weekEnd;
+                    });
+                    
+                    weeklyData.push(weekTasks.length);
+                    weeklyLabels.push(weekStart.toLocaleDateString("es-ES", { month: 'short', day: 'numeric' }));
+                }
+                
+                charts.c2 = new Chart(ctx2, {
+                    type: "line",
+                    data: {
+                        labels: weeklyLabels,
+                        datasets: [{
+                            label: 'Tareas Creadas',
+                            data: weeklyData,
+                            borderColor: isDarkMode ? '#3b82f6' : '#0056a4',
+                            backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0, 86, 164, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: isDarkMode ? '#3b82f6' : '#0056a4',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    color: isDarkMode ? '#a3adc2' : '#6e6e6e'
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    color: isDarkMode ? '#a3adc2' : '#6e6e6e',
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log("Gráficos creados exitosamente");
+                
+            } catch (err) {
+                console.error("Error rendering reports:", err);
+                toast("Error al generar reportes", "bad");
+            }
+        }
+        
+        // Populate selectors function
+        function populateSelectors() {
+            // Leaders checkboxes for tasks
+            const leadersDiv = qs("#nt-leaders");
+            if (leadersDiv) {
+                leadersDiv.innerHTML = supervisors.map(u => `
+                    <label class="task-item-badge" style="margin-right: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" value="${u.id}" style="margin-right: 5px;">
+                        ${u.full_name}
+                    </label>
+                `).join("");
+            }
+            
+            // Inspectors checkboxes
+            const inspectorsDiv = qs("#nt-inspectors");
+            if (inspectorsDiv) {
+                inspectorsDiv.innerHTML = inspectors.map(u => `
+                    <label class="task-item-badge" style="margin-right: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" value="${u.id}" style="margin-right: 5px;">
+                        ${u.full_name}
+                    </label>
+                `).join("");
+            }
+            
+            // Attendees checkboxes for meetings
+            const attendeesDiv = qs("#nm-attendees");
+            if (attendeesDiv) {
+                attendeesDiv.innerHTML = users.map(u => `
+                    <label class="task-item-badge" style="margin-right: 8px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" value="${u.id}" style="margin-right: 5px;">
+                        ${u.full_name}
+                    </label>
+                `).join("");
+            }
+        }
+        
+        // Users rendering function
+        function renderUsers() {
+            const box = qs("#list-users");
+            if (!box) return;
+            
+            box.innerHTML = "";
+            
+            if (users.length === 0) {
+                box.innerHTML = `
+                    <div class="task-item">
+                        <div class="task-item-content">
+                            <div class="task-item-title">No hay usuarios registrados</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            users.forEach(u => {
+                const roleLabels = {
+                    'inspector': 'Inspector',
+                    'supervisor': 'Supervisor',
+                    'jefe_terminal': 'Jefe de Terminal',
+                    'supervisor_admin': 'Administrador'
+                };
+                
+                const el = document.createElement("div");
+                el.className = "task-item";
+                el.innerHTML = `
+                    <div class="task-item-content">
+                        <div class="task-item-title">${u.full_name}</div>
+                        <div class="task-item-meta">
+                            <span class="task-item-badge">
+                                <i class="fas fa-user-tag"></i>
+                                <span>${roleLabels[u.role] || u.role}</span>
+                            </span>
+                            <span class="task-item-badge ${u.is_active ? 'badge-completed' : 'badge-overdue'}">
+                                <i class="fas fa-${u.is_active ? 'check-circle' : 'times-circle'}"></i>
+                                <span>${u.is_active ? 'Activo' : 'Inactivo'}</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="task-item-actions">
+                        <button class="btn btn-sm btn-secondary user-details" data-id="${u.id}">
+                            <i class="fas fa-eye"></i>
+                            <span>Detalles</span>
+                        </button>
+                    </div>
+                `;
+                box.appendChild(el);
+            });
+            
+            // Add event listeners
+            qsa('.user-details').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Could implement user details view in the future
+                    toast("Función en desarrollo", "info");
+                });
+            });
+        }
+        
+        // Send comment function
+        async function sendComment() {
+            if (!currentTask) return;
+            
+            const text = qs("#c-text").value.trim();
+            const file = qs("#c-file").files[0];
+            
+            if (!text && !file) {
+                toast("Ingrese un comentario o adjunte un archivo", "warn");
+                return;
+            }
+            
+            try {
+                // Upload file if provided
+                const fileUrl = await uploadFile(file, me.id);
+                
+                // Create comment
+                await supabase.from("task_comments").insert([{
+                    task_id: currentTask,
+                    user_id: me.id,
+                    content: text || null,
+                    file_url: fileUrl || null
+                }]);
+                
+                // Clear inputs
+                qs("#c-text").value = "";
+                qs("#c-file").value = "";
+                qs("#file-name").textContent = "";
+                
+                // Refresh comments
+                renderComments(currentTask);
+                
+                toast("Comentario enviado", "ok", me.full_name);
+                
+            } catch (err) {
+                console.error("Error sending comment:", err);
+                toast("Error al enviar comentario", "bad");
+            }
+        }
+        
+        // Highlight mentions function
+        function highlightMentions(text) {
+            if (!text) return "";
+            return text.replace(/@([^\s@,.;:]+)/g, (match, username) => {
+                const mentioned = users.find(u => 
+                    u.full_name.toLowerCase().includes(username.toLowerCase())
+                );
+                
+                if (mentioned) {
+                    return `<span class="task-item-badge badge-progress"><i class="fas fa-at"></i> ${mentioned.full_name}</span>`;
+                }
+                
+                return match;
+            });
+        }
+        
+        // Comments rendering function
+        async function renderComments(taskId) {
+            try {
+                const { data: comments } = await supabase.from("task_comments")
+                    .select("id, user_id, content, file_url, created_at")
+                    .eq("task_id", taskId)
+                    .order("created_at");
+                
+                const commentsContainer = qs("#md-comments");
+                commentsContainer.innerHTML = "";
+                
+                if (!comments || comments.length === 0) {
+                    commentsContainer.innerHTML = `
+                        <div class="task-item" style="text-align: center; color: var(--text-light);">
+                            <i class="fas fa-comments" style="font-size: 20px; margin-bottom: 10px;"></i>
+                            <p>No hay comentarios aún. Sé el primero en comentar.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                comments.forEach(comment => {
+                    let content = comment.content || "";
+                    let isSystem = false;
+                    let systemLabel = "";
+                    let systemIcon = "";
+                    
+                    if (content.startsWith("::status::")) {
+                        isSystem = true;
+                        const status = content.replace("::status::", "");
+                        systemLabel = `cambió estado a ${status}`;
+                        
+                        if (status === "pendiente") systemIcon = "clock";
+                        else if (status === "en_curso") systemIcon = "spinner";
+                        else if (status === "terminada") systemIcon = "check-circle";
+                    }
+                    
+                    if (content.startsWith("::approval::")) {
+                        isSystem = true;
+                        const approval = content.replace("::approval::", "");
+                        systemLabel = `actualizó aprobación a ${approval}`;
+                        
+                        if (approval === "ninguna") systemIcon = "ban";
+                        else if (approval === "aprobada") systemIcon = "check-circle";
+                        else if (approval === "posponer") systemIcon = "clock";
+                        else if (approval === "extender") systemIcon = "expand";
+                    }
+                    
+                    const who = nameOf(comment.user_id);
+                    
+                    const el = document.createElement("div");
+                    el.className = "task-item";
+                    
+                    if (isSystem) {
+                        el.style.background = "var(--panel-bg-alt)";
+                        el.style.borderStyle = "dashed";
+                        
+                        el.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="user-avatar" style="width: 28px; height: 28px; font-size: var(--font-size-xs);">
+                                    ${initials(who)}
+                                </div>
+                                <div>
+                                    <strong>${who}</strong> ${systemLabel}
+                                    <div style="color: var(--text-light); font-size: var(--font-size-xs);">
+                                        <i class="fas fa-${systemIcon}"></i> ${formatDate(comment.created_at)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const formattedContent = highlightMentions(content);
+                        
+                        el.innerHTML = `
+                            <div style="display: flex; gap: 10px;">
+                                <div class="user-avatar" style="width: 28px; height: 28px; font-size: var(--font-size-xs);">
+                                    ${initials(who)}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <strong>${who}</strong>
+                                        <span style="color: var(--text-light); font-size: var(--font-size-xs);">
+                                            ${formatDate(comment.created_at)}
+                                        </span>
+                                    </div>
+                                    <div style="margin-top: 4px; font-size: var(--font-size);">
+                                        ${formattedContent || ""}
+                                        ${comment.file_url ? `
+                                            <div style="margin-top: 8px;">
+                                                <a href="${comment.file_url}" target="_blank" class="task-item-badge">
+                                                    <i class="fas fa-paperclip"></i> Ver archivo adjunto
+                                                </a>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    commentsContainer.appendChild(el);
+                });
+                
+                // Scroll to bottom of comments
+                commentsContainer.scrollTop = commentsContainer.scrollHeight;
+                
+            } catch (err) {
+                console.error("Error rendering comments:", err);
+                toast("Error al cargar comentarios", "bad");
+            }
+        }
+        
+        // Combine date and time into ISO format
+        function combineISO(d, t) {
+            if (!d || !t) return null;
+            return new Date(`${d}T${t}:00`).toISOString();
+        }
+        
+        // Clear new meeting function
+        function clearNewMeeting() {
+            ["#nm-title", "#nm-date", "#nm-start", "#nm-end", "#nm-agenda"].forEach(s => qs(s).value = "");
+            qs("#nm-attendees").querySelectorAll("input").forEach(i => i.checked = false);
+        }
+        
+        // Clear new task function
+        function clearNewTask() {
+            ["#nt-title", "#nt-desc", "#nt-link", "#nt-date", "#nt-time"].forEach(s => qs(s).value = "");
+            qs("#nt-type").value = "tarea";
+            qs("#nt-vis").value = "todos";
+            qs("#nt-leaders").querySelectorAll("input").forEach(i => i.checked = false);
+            qs("#nt-file").value = "";
+            qs("#nt-inspectors").querySelectorAll("input").forEach(i => i.checked = false);
+        }
+        
+        // Pospone edit meeting function
+        async function posponeEditMeeting() {
+            if (!canManage()) { toast("Sin permisos para posponer reuniones", "bad"); return; }
+            if (!editMeetingId) return;
+            
+            try {
+                // Get current meeting data
+                const { data: meeting } = await supabase.from("meetings")
+                    .select("*")
+                    .eq("id", editMeetingId)
+                    .single();
+                
+                if (!meeting) {
+                    toast("Reunión no encontrada", "bad");
+                    return;
+                }
+                
+                // Calculate new dates (add 1 day)
+                const newStart = new Date(meeting.start_at);
+                newStart.setDate(newStart.getDate() + 1);
+                
+                const newEnd = new Date(meeting.end_at);
+                newEnd.setDate(newEnd.getDate() + 1);
+                
+                // Update meeting
+                await supabase.from("meetings").update({
+                    start_at: newStart.toISOString(),
+                    end_at: newEnd.toISOString()
+                }).eq("id", editMeetingId);
+                
+                closeModal("modal-edit-meeting");
+                toast("Reunión pospuesta 1 día", "ok", me.full_name);
+                sound();
+                renderMeetings();
+                renderCalendar();
+                
+            } catch (err) {
+                console.error("Error postponing meeting:", err);
+                toast("Error al posponer reunión", "bad");
+            }
+        }
+        
+        // Save edit meeting function
+        async function saveEditMeeting() {
+            if (!canManage()) { toast("Sin permisos para editar reuniones", "bad"); return; }
+            if (!editMeetingId) return;
+            
+            const title = qs("#em-title").value.trim();
+            const date = qs("#em-date").value;
+            const start = qs("#em-start").value;
+            const end = qs("#em-end").value;
+            const agenda = qs("#em-agenda").value.trim() || null;
+            
+            if (!title || !date || !start || !end) {
+                toast("Título, fecha y horas son obligatorios", "warn");
+                return;
+            }
+            
+            try {
+                const startISO = combineISO(date, start);
+                const endISO = combineISO(date, end);
+                
+                // Update meeting
+                await supabase.from("meetings").update({
+                    title,
+                    start_at: startISO,
+                    end_at: endISO,
+                    agenda
+                }).eq("id", editMeetingId);
+                
+                closeModal("modal-edit-meeting");
+                toast("Reunión actualizada", "ok", me.full_name);
+                sound();
+                renderMeetings();
+                renderCalendar();
+                
+            } catch (err) {
+                console.error("Error saving meeting:", err);
+                toast("Error al guardar reunión", "bad");
+            }
+        }
+        
+        // Update status function
+        async function updateStatus(id, status) {
+            try {
+                // Update task status
+                await supabase.from("tasks").update({
+                    status: status,
+                    updated_at: new Date().toISOString()
+                }).eq("id", id);
+                
+                // Add system comment
+                await supabase.from("task_comments").insert([{
+                    task_id: id,
+                    user_id: me.id,
+                    content: "::status::" + status
+                }]);
+                
+                toast(`Estado actualizado a ${status}`, "ok", me.full_name);
+                sound();
+                
+                // Refresh UI
+                refreshAllIfOpen();
+                renderComments(id);
+                
+            } catch (err) {
+                console.error("Error updating status:", err);
+                toast("Error al actualizar estado", "bad");
+            }
+        }
+        
+        // Update approval function
+        async function updateApproval(id, approval) {
+            if (!canManage()) {
+                toast("Sin permisos para cambiar aprobación", "bad");
+                return;
+            }
+            
+            try {
+                // Update task approval status
+                await supabase.from("tasks").update({
+                    approval_status: approval,
+                    updated_at: new Date().toISOString()
+                }).eq("id", id);
+                
+                // Add system comment
+                await supabase.from("task_comments").insert([{
+                    task_id: id,
+                    user_id: me.id,
+                    content: "::approval::" + approval
+                }]);
+                
+                toast(`Aprobación actualizada a ${approval}`, "ok", me.full_name);
+                sound();
+                
+                // Refresh UI
+                refreshAllIfOpen();
+                renderComments(id);
+                
+            } catch (err) {
+                console.error("Error updating approval:", err);
+                toast("Error al actualizar aprobación", "bad");
+            }
+        }
+        
+        // Performance rendering function
+        async function renderPerformance() {
+            try {
+                const days = parseInt(qs('#perf-window').value) || 30;
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+                
+                const { data: tasks } = await supabase.from("tasks")
+                    .select("id, status, created_at, due_date, leader_id, created_by")
+                    .gte("created_at", startDate.toISOString());
+                
+                if (!tasks) return;
+                
+                // Group tasks by user
+                const userStats = {};
+                users.forEach(user => {
+                    userStats[user.id] = {
+                        name: user.full_name,
+                        total: 0,
+                        completed: 0,
+                        pending: 0,
+                        overdue: 0
+                    };
+                });
+                
+                tasks.forEach(task => {
+                    if (userStats[task.created_by]) {
+                        userStats[task.created_by].total++;
+                        
+                        if (task.status === "terminada") {
+                            userStats[task.created_by].completed++;
+                        } else if (task.status === "pendiente") {
+                            userStats[task.created_by].pending++;
+                        }
+                        
+                        if (task.due_date && new Date(task.due_date) < new Date() && task.status !== "terminada") {
+                            userStats[task.created_by].overdue++;
+                        }
+                    }
+                });
+                
+                // Render performance table
+                const perfTable = qs("#perf-table");
+                perfTable.innerHTML = "";
+                
+                Object.values(userStats).forEach(stats => {
+                    if (stats.total === 0) return;
+                    
+                    const completionRate = ((stats.completed / stats.total) * 100).toFixed(1);
+                    const row = document.createElement("div");
+                    row.className = "task-item";
+                    row.innerHTML = `
+                        <div class="task-item-content">
+                            <div class="task-item-title">${stats.name}</div>
+                            <div class="task-item-meta">
+                                <span class="task-item-badge">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>${stats.total} tareas</span>
+                                </span>
+                                <span class="task-item-badge badge-completed">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>${stats.completed} completadas</span>
+                                </span>
+                                <span class="task-item-badge badge-pending">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${stats.pending} pendientes</span>
+                                </span>
+                                ${stats.overdue > 0 ? `
+                                    <span class="task-item-badge badge-overdue">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>${stats.overdue} atrasadas</span>
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="task-item-actions">
+                            <span class="task-item-badge badge-progress">
+                                <i class="fas fa-percentage"></i>
+                                <span>${completionRate}%</span>
+                            </span>
+                        </div>
+                    `;
+                    perfTable.appendChild(row);
+                });
+                
+            } catch (err) {
+                console.error("Error rendering performance:", err);
+            }
+        }
         
 
 
@@ -6245,34 +8136,67 @@ async function deleteMeeting(meetingId, meetingTitle) {
 // Función para destruir todos los gráficos de manera segura
 function destroyAllCharts() {
     try {
-        // Destruir todos los gráficos en el objeto charts
+        console.log("Iniciando destrucción agresiva de todos los gráficos...");
+        
+        // 1. Destruir todos los gráficos en nuestro objeto charts
         Object.keys(charts).forEach(key => {
             if (charts[key] && typeof charts[key].destroy === 'function') {
                 try {
                     charts[key].destroy();
+                    console.log(`Gráfico ${key} destruido`);
                 } catch (e) {
                     console.log(`Error destruyendo gráfico ${key}:`, e);
                 }
             }
         });
         
-        // Limpiar la variable charts
-        charts = {};
-        
-        // Destruir TODOS los gráficos de Chart.js (por si acaso)
+        // 2. Destruir TODAS las instancias de Chart.js globalmente
         if (window.Chart && window.Chart.instances) {
-            window.Chart.instances.forEach(chart => {
+            console.log(`Destruyendo ${window.Chart.instances.length} instancias de Chart.js...`);
+            window.Chart.instances.forEach((chart, index) => {
                 try {
                     if (chart && typeof chart.destroy === 'function') {
                         chart.destroy();
+                        console.log(`Instancia ${index} destruida`);
                     }
                 } catch (e) {
-                    console.log("Error destruyendo instancia de Chart:", e);
+                    console.log(`Error destruyendo instancia ${index}:`, e);
                 }
             });
         }
         
-        console.log("Todos los gráficos destruidos correctamente");
+        // 3. Buscar y destruir gráficos por canvas
+        const allCanvases = document.querySelectorAll('canvas[id^="chart"]');
+        allCanvases.forEach(canvas => {
+            try {
+                // Intentar obtener el contexto y limpiarlo
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    console.log(`Canvas ${canvas.id} limpiado`);
+                }
+            } catch (e) {
+                console.log(`Error limpiando canvas ${canvas.id}:`, e);
+            }
+        });
+        
+        // 4. Limpiar la variable charts
+        charts = {};
+        
+        // 5. Forzar garbage collection si está disponible
+        if (window.gc) {
+            window.gc();
+        }
+        
+        console.log("Destrucción agresiva completada");
+        
+        // 6. Verificar que no queden gráficos activos
+        setTimeout(() => {
+            if (window.Chart && window.Chart.instances) {
+                console.log(`Gráficos restantes después de limpieza: ${window.Chart.instances.length}`);
+            }
+        }, 100);
+        
     } catch (e) {
         console.log("Error en destroyAllCharts:", e);
         charts = {};
@@ -6328,37 +8252,114 @@ function hasActiveCharts() {
 // Función para reiniciar completamente Chart.js
 function resetChartJS() {
     try {
-        console.log("Reiniciando Chart.js...");
+        console.log("Reiniciando Chart.js completamente...");
         
-        // Destruir todos los gráficos
+        // 1. Destruir todos los gráficos
         destroyAllCharts();
+        
+        // 2. Limpiar todos los canvas
         clearAllChartCanvases();
         
-        // Limpiar todas las instancias de Chart.js
+        // 3. Forzar destrucción de todas las instancias de Chart.js
         if (window.Chart && window.Chart.instances) {
-            window.Chart.instances.forEach(chart => {
+            console.log("Forzando destrucción de instancias restantes...");
+            const instances = [...window.Chart.instances]; // Copiar array para evitar problemas
+            instances.forEach((chart, index) => {
                 try {
                     if (chart && typeof chart.destroy === 'function') {
                         chart.destroy();
+                        console.log(`Instancia ${index} forzada a destruir`);
                     }
                 } catch (e) {
-                    console.log("Error destruyendo instancia durante reset:", e);
+                    console.log(`Error forzando destrucción de instancia ${index}:`, e);
                 }
             });
         }
         
-        // Forzar garbage collection si está disponible
+        // 4. Limpiar referencias globales
+        if (window.Chart && window.Chart.instances) {
+            window.Chart.instances.length = 0;
+        }
+        
+        // 5. Forzar garbage collection
         if (window.gc) {
             window.gc();
         }
         
-        console.log("Chart.js reiniciado correctamente");
+        // 6. Esperar un momento y verificar
+        setTimeout(() => {
+            if (window.Chart && window.Chart.instances) {
+                console.log(`Instancias restantes después del reset: ${window.Chart.instances.length}`);
+                if (window.Chart.instances.length > 0) {
+                    console.log("ADVERTENCIA: Aún quedan instancias activas");
+                }
+            }
+        }, 200);
+        
+        console.log("Chart.js reiniciado completamente");
     } catch (e) {
         console.log("Error reiniciando Chart.js:", e);
+    }
+}
+
+// Función para verificar el estado de Chart.js
+function checkChartJSStatus() {
+    try {
+        const status = {
+            hasChartLibrary: !!window.Chart,
+            hasInstances: !!(window.Chart && window.Chart.instances),
+            instanceCount: window.Chart && window.Chart.instances ? window.Chart.instances.length : 0,
+            hasLocalCharts: Object.keys(charts).length > 0,
+            localChartKeys: Object.keys(charts)
+        };
+        
+        console.log("Estado de Chart.js:", status);
+        return status;
+    } catch (e) {
+        console.log("Error verificando estado de Chart.js:", e);
+        return { error: e.message };
+    }
+}
+
+// Función para crear gráficos de manera segura
+function createChartSafely(canvas, config, chartKey) {
+    try {
+        // Verificar que el canvas esté disponible
+        if (!canvas) {
+            throw new Error(`Canvas no encontrado para ${chartKey}`);
+        }
+        
+        // Verificar que no haya gráficos activos en este canvas
+        if (charts[chartKey] && typeof charts[chartKey].destroy === 'function') {
+            console.log(`Destruyendo gráfico existente ${chartKey}...`);
+            charts[chartKey].destroy();
+            charts[chartKey] = null;
+        }
+        
+        // Limpiar el canvas
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Crear el nuevo gráfico
+        const newChart = new Chart(canvas, config);
+        
+        // Verificar que se creó correctamente
+        if (newChart && newChart.id !== undefined) {
+            charts[chartKey] = newChart;
+            console.log(`Gráfico ${chartKey} creado exitosamente con ID: ${newChart.id}`);
+            return newChart;
+        } else {
+            throw new Error(`Error creando gráfico ${chartKey}`);
+        }
+        
+    } catch (e) {
+        console.error(`Error creando gráfico ${chartKey}:`, e);
+        return null;
     }
 }
 </script>
 
 </body>
-</html>
 </html>
